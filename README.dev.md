@@ -1,177 +1,91 @@
-# package-readme-mcp-server - Developer Guide
+# Developer guide
 
-MCP server for fetching npm package README and usage information の開発環境セットアップガイド
+Local development setup for `@bradford-tech/npm-package-readme-mcp-server`.
 
-## 環境要件
+## Requirements
 
-- Node.js 18.0.0以上
-- npm または yarn
-- TypeScript 5.0以上
+- Node.js >= 18
+- npm (or your package manager of choice)
 
-## セットアップ
-
-### 1. 依存関係のインストール
+## Setup
 
 ```bash
+git clone https://github.com/bradford-tech/npm-package-readme-mcp-server.git
+cd npm-package-readme-mcp-server
 npm install
 ```
 
-### 2. 開発環境での実行
+## Scripts
 
-```bash
-# TypeScriptファイルを直接実行（開発用）
-npm run dev
+| Script | Description |
+| --- | --- |
+| `npm run dev` | Run the server directly from TypeScript via `tsx`. |
+| `npm run build` | Compile TypeScript to `dist/`. |
+| `npm start` | Run the built server from `dist/`. |
+| `npm run typecheck` | Type-check without emitting. |
+| `npm run lint` | Lint `src/**/*.ts` with ESLint. |
+| `npm test` | Run the Jest test suite. |
 
-# ビルドしてから実行
-npm run build
-npm start
-```
-
-## 開発用コマンド
-
-```bash
-# 開発サーバー起動（tsx使用）
-npm run dev
-
-# TypeScriptビルド
-npm run build
-
-# 型チェック（エラーチェックのみ）
-npm run typecheck
-
-# ESLintによるコード品質チェック
-npm run lint
-
-# テスト実行
-npm run test
-```
-
-## プロジェクト構造
+## Project layout
 
 ```
 src/
-├── index.ts              # エントリーポイント
-├── server.ts             # MCPサーバーメイン実装
-├── services/             # 外部API・キャッシュサービス
-│   ├── cache.ts         # キャッシュ管理
-│   ├── github-api.ts    # GitHub API連携
-│   ├── npm-registry.ts  # npm registry API連携
-│   └── readme-parser.ts # README解析処理
-├── tools/               # MCPツール実装
-│   ├── get-package-info.ts
-│   ├── get-package-readme.ts
-│   └── search-packages.ts
-├── types/               # 型定義
-│   └── index.ts
-└── utils/               # ユーティリティ
-    ├── error-handler.ts
-    ├── logger.ts
-    └── validators.ts
+├── index.ts                  Entry point — wires signal handlers and starts the server.
+├── server.ts                 MCP server class, tool definitions, and request handlers.
+├── services/
+│   ├── cache.ts              In-memory LRU cache with TTL.
+│   ├── github-api.ts         GitHub REST client for README fallback.
+│   ├── npm-registry.ts       npm registry client (info, search, downloads).
+│   └── readme-parser.ts      Markdown parsing — extracts usage examples.
+├── tools/
+│   ├── get-package-info.ts   Implements `get_package_info_from_npm`.
+│   ├── get-package-readme.ts Implements `get_readme_from_npm`.
+│   └── search-packages.ts    Implements `search_packages_from_npm`.
+├── types/
+│   └── index.ts              Shared interfaces and error classes.
+└── utils/
+    ├── error-handler.ts      `withRetry`, HTTP error mapping.
+    ├── logger.ts             Logger (disabled for MCP stdio compatibility — see below).
+    └── validators.ts         Input validators with detailed error messages.
+tests/
+└── validation.test.ts        Validator unit tests.
 ```
 
-## 開発環境変数
+## Manual smoke test
 
-開発時に設定可能な環境変数：
-
-```bash
-# ログレベル設定
-export LOG_LEVEL=DEBUG
-
-# キャッシュ有効期限（秒）
-export CACHE_TTL=3600
-
-# リクエストタイムアウト（ミリ秒）
-export REQUEST_TIMEOUT=30000
-
-# GitHub APIトークン（レート制限回避用）
-export GITHUB_TOKEN=your_github_token_here
-```
-
-## デバッグ
-
-### ローカルでのMCPサーバー動作確認
+The server speaks JSON-RPC over stdio. After building, list the available tools:
 
 ```bash
-# サーバーを直接起動
-npm run dev
-
-# 別ターミナルでJSONRPCリクエストをテスト
+npm run build
 echo '{"jsonrpc": "2.0", "id": 1, "method": "tools/list"}' | node dist/index.js
 ```
 
-### ログレベル設定
+You should see a JSON response listing `get_readme_from_npm`, `get_package_info_from_npm`, and `search_packages_from_npm`.
 
-開発時は詳細なログを確認するため：
+## Logger note
 
-```bash
-LOG_LEVEL=DEBUG npm run dev
-```
+`src/utils/logger.ts` is intentionally a no-op. Writing to stdout or stderr corrupts the JSON-RPC stream MCP clients read. If you need temporary debugging, write to a file instead of using `console.log`.
 
-## テスト
+## Architecture notes
 
-```bash
-# 全テスト実行
-npm test
+- **Caching.** The cache is in-process, with a default TTL of 1 hour (search responses get 10 minutes). It uses approximate byte sizing and evicts least-recently-used entries above 100 MB. Cache keys live in `src/services/cache.ts` under `createCacheKey`.
+- **Retries.** `withRetry` in `src/utils/error-handler.ts` wraps every outbound HTTP call. It backs off exponentially on network errors and 5xx responses, and honors `Retry-After` on 429.
+- **README fallback.** `get_readme_from_npm` first reads the `readme` field from the npm registry response. If empty, it parses the `repository` URL (supports `https://`, `git+https://`, `git://`, and `git@` forms) and fetches `/repos/{owner}/{repo}/readme` from GitHub.
+- **GitHub rate limits.** Anonymous GitHub requests are capped at 60/hour. The `GitHubApiClient` accepts a token in its constructor but is currently exported without one (`new GitHubApiClient()`); wiring this to an environment variable is a reasonable contribution.
 
-# 特定のテストファイル実行
-npm test -- tests/specific-test.spec.ts
+## Pre-release checklist
 
-# ウォッチモード
-npm test -- --watch
-```
+- [ ] `npm run typecheck` passes
+- [ ] `npm run lint` passes
+- [ ] `npm test` passes
+- [ ] `npm run build` produces a clean `dist/`
+- [ ] Bump `version` in `package.json`
+- [ ] Update README if user-facing behavior changed
+- [ ] `npm publish` (the `prepublishOnly` hook will rebuild)
 
-## コード品質
+## Contributing
 
-### ESLint設定
-
-- `@typescript-eslint/eslint-plugin`を使用
-- 厳格な型チェックを実装
-- コードスタイルの統一
-
-### TypeScript設定
-
-- 厳格モード有効
-- ES2020ターゲット
-- ESModules使用
-- ソースマップ生成
-
-## トラブルシューティング
-
-### よくある問題
-
-1. **TypeScriptコンパイルエラー**
-   ```bash
-   npm run typecheck
-   ```
-
-2. **ESLintエラー**
-   ```bash
-   npm run lint
-   ```
-
-3. **モジュール解決エラー**
-   - `tsconfig.json`の`moduleResolution`設定を確認
-   - `package.json`の`type: "module"`設定を確認
-
-### デバッグのヒント
-
-- `LOG_LEVEL=DEBUG`でより詳細なログを出力
-- キャッシュ問題が疑われる場合は`CACHE_TTL=0`でキャッシュを無効化
-- GitHub APIレート制限に達した場合は`GITHUB_TOKEN`を設定
-
-## リリース前チェックリスト
-
-- [ ] `npm run typecheck` - 型エラーなし
-- [ ] `npm run lint` - リントエラーなし  
-- [ ] `npm run test` - 全テスト通過
-- [ ] `npm run build` - ビルド成功
-- [ ] バージョン番号更新（package.json）
-- [ ] README.md更新（必要に応じて）
-
-## 貢献ガイドライン
-
-1. 新機能追加時は型定義も含めて実装
-2. エラーハンドリングを適切に実装
-3. ログ出力を適切なレベルで設定
-4. テストケースを追加
-5. TypeScriptの厳格な型チェックに従う
+1. Open an issue describing the change before significant work.
+2. Keep validators and error messages consistent with the existing style — concrete suggestions, no jargon.
+3. Add Jest tests for new validators or parsers.
+4. Run `npm run typecheck && npm run lint && npm test` before opening a PR.

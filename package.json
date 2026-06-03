@@ -1,5 +1,5 @@
 {
-  "name": "npm-package-readme-mcp-server",
+  "name": "@bradford-tech/npm-package-readme-mcp-server",
   "version": "0.1.4",
   "description": "MCP server for fetching npm package README and usage information",
   "type": "module",
@@ -7,13 +7,27 @@
   "bin": {
     "npm-package-readme-mcp-server": "dist/index.js"
   },
+  "files": [
+    "dist",
+    "README.md",
+    "LICENSE"
+  ],
   "scripts": {
     "build": "tsc",
     "dev": "tsx src/index.ts",
     "start": "node dist/index.js",
     "test": "jest",
     "lint": "eslint src/**/*.ts",
-    "typecheck": "tsc --noEmit"
+    "typecheck": "tsc --noEmit",
+    "prepublishOnly": "npm run build"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/bradford-tech/npm-package-readme-mcp-server.git"
+  },
+  "homepage": "https://github.com/bradford-tech/npm-package-readme-mcp-server#readme",
+  "bugs": {
+    "url": "https://github.com/bradford-tech/npm-package-readme-mcp-server/issues"
   },
   "keywords": [
     "mcp",
@@ -22,8 +36,11 @@
     "package",
     "documentation"
   ],
-  "author": "naoto24kawa",
+  "author": "sbs44",
   "license": "MIT",
+  "publishConfig": {
+    "access": "public"
+  },
   "dependencies": {
     "@modelcontextprotocol/sdk": "^1.29.0"
   },

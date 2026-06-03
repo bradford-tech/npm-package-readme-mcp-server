@@ -7,7 +7,7 @@ export interface UsageExample {
 
 export interface InstallationInfo {
   command: string; // "install package-name"
-  alternatives?: string[]; // 他のパッケージマネージャーでのインストール方法
+  alternatives?: string[]; // Installation commands for other package managers
 }
 
 export interface AuthorInfo {
@@ -71,14 +71,14 @@ export interface GetPackageReadmeParams {
 export interface GetPackageInfoParams {
   package_name: string;
   include_dependencies?: boolean; // Whether to include dependencies (default: true)
-  include_dev_dependencies?: boolean; // 開発依存関係を含めるか（デフォルト: false）
+  include_dev_dependencies?: boolean; // Whether to include dev dependencies (default: false)
 }
 
 export interface SearchPackagesParams {
-  query: string;          // 検索クエリ
-  limit?: number;         // 結果の上限数（デフォルト: 20）
-  quality?: number;       // 品質スコアの最小値（0-1）
-  popularity?: number;    // 人気度スコアの最小値（0-1）
+  query: string;          // Search query
+  limit?: number;         // Maximum number of results (default: 20)
+  quality?: number;       // Minimum quality score (0-1)
+  popularity?: number;    // Minimum popularity score (0-1)
 }
 
 // Tool Responses
@@ -91,7 +91,7 @@ export interface PackageReadmeResponse {
   installation: InstallationInfo;
   basic_info: PackageBasicInfo;
   repository?: RepositoryInfo | undefined;
-  exists: boolean; // パッケージが存在するか
+  exists: boolean; // Whether the package exists
 }
 
 export interface PackageInfoResponse {
@@ -105,7 +105,7 @@ export interface PackageInfoResponse {
   dev_dependencies?: Record<string, string> | undefined;
   download_stats: DownloadStats;
   repository?: RepositoryInfo | undefined;
-  exists: boolean; // パッケージが存在するか
+  exists: boolean; // Whether the package exists
 }
 
 export interface SearchPackagesResponse {
