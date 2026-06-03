@@ -40,7 +40,7 @@ export async function getPackageReadme(params: GetPackageReadmeParams): Promise<
       logger.debug(`Getting package info for: ${package_name}`);
       packageInfo = await npmRegistry.getPackageInfo(package_name);
       versionInfo = await npmRegistry.getVersionInfo(package_name, version);
-    } catch (error) {
+    } catch {
       // If package not found, return a response indicating non-existence
       logger.debug(`Package not found: ${package_name}`);
       return {

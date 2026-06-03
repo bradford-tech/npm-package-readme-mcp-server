@@ -143,9 +143,9 @@ export function validatePackageName(packageName: string): void {
     // Provide specific suggestions based on common patterns
     if (trimmed.includes('@') && !trimmed.startsWith('@')) {
       suggestion = '\nNote: @ symbol is only allowed at the beginning for scoped packages.';
-    } else if (/[^a-z0-9\-._~@\/]/.test(trimmed)) {
-      const invalidChars = trimmed.match(/[^a-z0-9\-._~@\/]/g);
-      const suggested = trimmed.replace(/[^a-z0-9\-._~@\/]/g, '-');
+    } else if (/[^a-z0-9\-._~@/]/.test(trimmed)) {
+      const invalidChars = trimmed.match(/[^a-z0-9\-._~@/]/g);
+      const suggested = trimmed.replace(/[^a-z0-9\-._~@/]/g, '-');
       suggestion = `\nInvalid characters found: ${Array.from(new Set(invalidChars)).join(', ')}\n` +
                   `Suggestion: "${suggested}"`;
     }
