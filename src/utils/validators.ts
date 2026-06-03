@@ -1,7 +1,7 @@
 import { PackageReadmeMcpError } from '../types/index.js';
 
 export function validatePackageName(packageName: string): void {
-  if (!packageName || typeof packageName !== 'string') {
+  if (typeof packageName !== 'string') {
     throw new PackageReadmeMcpError(
       'Package name is required and must be a string.\n' +
       'Examples of valid package names:\n' +
@@ -161,20 +161,21 @@ export function validatePackageName(packageName: string): void {
     );
   }
 
-  // Check for reserved names
-  const reservedNames = [
-    'node_modules', 'favicon.ico', '.DS_Store', 'thumbs.db', 'package.json',
-    'npm', 'node', 'javascript', 'js', 'nodejs'
-  ];
-  
-  const packageNameOnly = trimmed.startsWith('@') ? trimmed.split('/')[1] : trimmed;
-  if (reservedNames.includes(packageNameOnly.toLowerCase())) {
-    throw new PackageReadmeMcpError(
-      `"${packageNameOnly}" is a reserved name and cannot be used as a package name.\n` +
-      `Try adding a prefix or suffix: ${packageNameOnly}-lib, my-${packageNameOnly}, ${packageNameOnly}-utils\n` +
-      'Reserved names include system files and core JavaScript/Node.js terms.',
-      'INVALID_PACKAGE_NAME'
-    );
+  // Check for reserved names (unscoped packages only; scope provides namespacing)
+  if (!trimmed.startsWith('@')) {
+    const reservedNames = [
+      'node_modules', 'favicon.ico', '.ds_store', 'thumbs.db', 'package.json',
+      'npm', 'node', 'javascript', 'js', 'nodejs'
+    ];
+
+    if (reservedNames.includes(trimmed.toLowerCase())) {
+      throw new PackageReadmeMcpError(
+        `"${trimmed}" is a reserved name and cannot be used as a package name.\n` +
+        `Try adding a prefix or suffix: ${trimmed}-lib, my-${trimmed}, ${trimmed}-utils\n` +
+        'Reserved names include system files and core JavaScript/Node.js terms.',
+        'INVALID_PACKAGE_NAME'
+      );
+    }
   }
 }
 
