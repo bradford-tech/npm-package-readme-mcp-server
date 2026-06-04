@@ -5,8 +5,14 @@ export enum LogLevel {
   DEBUG = 3,
 }
 
+const LEVEL_NAMES: Record<LogLevel, string> = {
+  [LogLevel.ERROR]: 'ERROR',
+  [LogLevel.WARN]: 'WARN',
+  [LogLevel.INFO]: 'INFO',
+  [LogLevel.DEBUG]: 'DEBUG',
+};
 
-class Logger {
+export class Logger {
   private logLevel: LogLevel;
 
   constructor(logLevel?: LogLevel | string) {
@@ -15,13 +21,17 @@ class Logger {
     } else {
       this.logLevel = logLevel ?? LogLevel.INFO;
     }
-    // Suppress unused variable warning
-    void this.logLevel;
   }
 
-  private log(_level: LogLevel, _message: string, _data?: unknown): void {
-    // Disable all console output for MCP servers to prevent JSON-RPC corruption
-    return;
+  private log(level: LogLevel, message: string, data?: unknown): void {
+    if (level > this.logLevel) {
+      return;
+    }
+    const line = data !== undefined
+      ? `[${LEVEL_NAMES[level]}] ${message} ${formatData(data)}`
+      : `[${LEVEL_NAMES[level]}] ${message}`;
+    // stdout is reserved for MCP JSON-RPC traffic; logs go to stderr.
+    process.stderr.write(line + '\n');
   }
 
   error(message: string, data?: unknown): void {
@@ -41,4 +51,17 @@ class Logger {
   }
 }
 
-export const logger = new Logger(LogLevel.INFO);
+function formatData(value: unknown): string {
+  if (value instanceof Error) {
+    return value.stack
+      ? `${value.name}: ${value.message}\n${value.stack}`
+      : `${value.name}: ${value.message}`;
+  }
+  try {
+    return JSON.stringify(value);
+  } catch {
+    return String(value);
+  }
+}
+
+export const logger = new Logger(process.env.LOG_LEVEL);
