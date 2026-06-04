@@ -119,4 +119,8 @@ export class GitHubApiClient {
   }
 }
 
-export const githubApi = new GitHubApiClient();
+const githubTimeoutMs = Number(process.env.REQUEST_TIMEOUT);
+export const githubApi = new GitHubApiClient(
+  process.env.GITHUB_TOKEN,
+  Number.isFinite(githubTimeoutMs) && githubTimeoutMs > 0 ? githubTimeoutMs : undefined,
+);

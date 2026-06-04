@@ -211,4 +211,7 @@ export class NpmRegistryClient {
   }
 }
 
-export const npmRegistry = new NpmRegistryClient();
+const npmTimeoutMs = Number(process.env.REQUEST_TIMEOUT);
+export const npmRegistry = new NpmRegistryClient(
+  Number.isFinite(npmTimeoutMs) && npmTimeoutMs > 0 ? npmTimeoutMs : undefined,
+);

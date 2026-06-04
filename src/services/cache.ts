@@ -183,5 +183,8 @@ export const createCacheKey = {
     `stats:${packageName}:${period}:${new Date().toISOString().split('T')[0]}`, // Include date for daily invalidation
 };
 
-// Global cache instance
-export const cache = new MemoryCache();
+// Global cache instance. CACHE_TTL is interpreted as seconds (matches README).
+const ttlSeconds = Number(process.env.CACHE_TTL);
+export const cache = new MemoryCache(
+  Number.isFinite(ttlSeconds) && ttlSeconds > 0 ? { ttl: ttlSeconds * 1000 } : {},
+);
