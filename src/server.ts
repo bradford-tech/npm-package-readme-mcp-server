@@ -127,24 +127,24 @@ export class PackageReadmeMcpServer {
 
   private setupHandlers(): void {
     // List available tools
-    (this.server as any).setRequestHandler(ListToolsRequestSchema, async () => {
+    this.server.setRequestHandler(ListToolsRequestSchema, async () => {
       return {
         tools: Object.values(TOOL_DEFINITIONS),
       }
     });
 
     // Handle prompts list
-    (this.server as any).setRequestHandler(ListPromptsRequestSchema, async () => {
+    this.server.setRequestHandler(ListPromptsRequestSchema, async () => {
       return { prompts: [] };
     });
 
     // Handle resources list
-    (this.server as any).setRequestHandler(ListResourcesRequestSchema, async () => {
+    this.server.setRequestHandler(ListResourcesRequestSchema, async () => {
       return { resources: [] };
     });
 
     // Handle tool calls
-    (this.server as any).setRequestHandler(CallToolRequestSchema, async (request: any, _extra: any) => {
+    this.server.setRequestHandler(CallToolRequestSchema, async (request) => {
       const { name, arguments: args } = request.params;
       
 
@@ -416,7 +416,7 @@ export class PackageReadmeMcpServer {
   async run(): Promise<void> {
     try {
       const transport = new StdioServerTransport();
-      await (this.server as any).connect(transport);
+      await this.server.connect(transport);
     } catch (error) {
       logger.error('Failed to start server transport', { error });
       throw error;
@@ -424,7 +424,7 @@ export class PackageReadmeMcpServer {
   }
 
   async stop(): Promise<void> {
-    await (this.server as any).close();
+    await this.server.close();
   }
 }
 
