@@ -1,6 +1,6 @@
 {
   "name": "@bradford-tech/npm-package-readme-mcp-server",
-  "version": "0.1.4",
+  "version": "0.1.5",
   "description": "MCP server for fetching npm package README and usage information",
   "type": "module",
   "main": "dist/index.js",
