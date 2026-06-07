@@ -6,7 +6,7 @@ export interface UsageExample {
 }
 
 export interface InstallationInfo {
-  command: string; // "install package-name"
+  command: string; // e.g. "npm install package-name"
   alternatives?: string[]; // Installation commands for other package managers
 }
 

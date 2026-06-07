@@ -107,6 +107,18 @@ describe('getPackageReadme', () => {
     });
     expect(result.exists).toBe(false);
   });
+
+  test('installation.command is a complete `npm install` invocation (success path)', async () => {
+    fetchSpy.mockImplementation(async () => jsonResponse(STUB_PACKAGE_INFO));
+    const result = await getPackageReadme({ package_name: 'real' });
+    expect(result.installation.command).toBe('npm install real');
+  });
+
+  test('installation.command is a complete `npm install` invocation (not-found path)', async () => {
+    fetchSpy.mockImplementation(async () => new Response('not found', { status: 404 }));
+    const result = await getPackageReadme({ package_name: 'gone' });
+    expect(result.installation.command).toBe('npm install gone');
+  });
 });
 
 describe('getPackageInfo', () => {

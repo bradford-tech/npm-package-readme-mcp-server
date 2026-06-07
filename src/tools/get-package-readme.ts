@@ -53,7 +53,7 @@ export async function getPackageReadme(params: GetPackageReadmeParams): Promise<
       readme_content: '',
       usage_examples: [],
       installation: {
-        command: `install ${package_name}`,
+        command: `npm install ${package_name}`,
         alternatives: [`yarn add ${package_name}`, `pnpm add ${package_name}`],
       },
       basic_info: {
@@ -101,7 +101,7 @@ export async function getPackageReadme(params: GetPackageReadmeParams): Promise<
 
   // Create installation info
   const installation: InstallationInfo = {
-    command: `install ${package_name}`,
+    command: `npm install ${package_name}`,
     alternatives: [`yarn add ${package_name}`, `pnpm add ${package_name}`],
   };
 
