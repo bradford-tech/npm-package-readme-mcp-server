@@ -21,7 +21,7 @@ export async function getPackageInfo(params: GetPackageInfoParams): Promise<Pack
   validatePackageName(package_name);
 
   // Check cache first
-  const cacheKey = createCacheKey.packageInfo(package_name, 'latest');
+  const cacheKey = createCacheKey.packageInfo(package_name);
   const cached = cache.get<PackageInfoResponse>(cacheKey);
   if (cached) {
     logger.debug(`Cache hit for package info: ${package_name}`);
