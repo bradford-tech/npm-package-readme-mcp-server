@@ -1,10 +1,11 @@
 import { logger } from '../utils/logger.js';
 import { handleApiError, handleHttpError, withRetry } from '../utils/error-handler.js';
-import { 
-  NpmPackageInfo, 
-  NpmVersionInfo, 
-  NpmSearchResponse, 
+import {
+  NpmPackageInfo,
+  NpmVersionInfo,
+  NpmSearchResponse,
   NpmDownloadStats,
+  PackageNotFoundError,
   VersionNotFoundError,
 } from '../types/index.js';
 
@@ -23,10 +24,11 @@ export class NpmRegistryClient {
       await this.getPackageInfo(packageName);
       return true;
     } catch (error) {
-      if (error instanceof Error && error.message.includes('404')) {
+      if (error instanceof PackageNotFoundError) {
         return false;
       }
-      // For other errors, assume package might exist but there's a temporary issue
+      // For other errors (network, auth, 5xx), the package might exist
+      // but we can't tell — surface the failure instead of guessing.
       throw error;
     }
   }
@@ -50,6 +52,9 @@ export class NpmRegistryClient {
         });
 
         if (!response.ok) {
+          if (response.status === 404) {
+            throw new PackageNotFoundError(packageName);
+          }
           handleHttpError(response.status, response, `npm registry for package ${packageName}`);
         }
 
@@ -57,10 +62,10 @@ export class NpmRegistryClient {
         logger.debug(`Successfully fetched package info: ${packageName}`);
         return data;
       } catch (error) {
-        if ((error as Error).name === 'AbortError') {
-          handleApiError(new Error('Request timeout'), `npm registry for package ${packageName}`);
-        }
-        handleApiError(error, `npm registry for package ${packageName}`);
+        const target = (error as Error).name === 'AbortError'
+          ? new Error('Request timeout')
+          : error;
+        handleApiError(target, `npm registry for package ${packageName}`);
       } finally {
         clearTimeout(timeoutId);
       }
@@ -128,10 +133,10 @@ export class NpmRegistryClient {
         logger.debug(`Successfully searched packages: ${query}, found ${data.total} results`);
         return data;
       } catch (error) {
-        if ((error as Error).name === 'AbortError') {
-          handleApiError(new Error('Request timeout'), `npm search for query ${query}`);
-        }
-        handleApiError(error, `npm search for query ${query}`);
+        const target = (error as Error).name === 'AbortError'
+          ? new Error('Request timeout')
+          : error;
+        handleApiError(target, `npm search for query ${query}`);
       } finally {
         clearTimeout(timeoutId);
       }
@@ -173,10 +178,10 @@ export class NpmRegistryClient {
         logger.debug(`Successfully fetched download stats: ${packageName} (${period})`);
         return data;
       } catch (error) {
-        if ((error as Error).name === 'AbortError') {
-          handleApiError(new Error('Request timeout'), `npm downloads for package ${packageName}`);
-        }
-        handleApiError(error, `npm downloads for package ${packageName}`);
+        const target = (error as Error).name === 'AbortError'
+          ? new Error('Request timeout')
+          : error;
+        handleApiError(target, `npm downloads for package ${packageName}`);
       } finally {
         clearTimeout(timeoutId);
       }

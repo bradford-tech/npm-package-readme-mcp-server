@@ -5,5 +5,6 @@ export default defineConfig({
     globals: true,
     include: ['tests/**/*.test.ts'],
     environment: 'node',
+    env: { LOG_LEVEL: 'ERROR' },
   },
 });

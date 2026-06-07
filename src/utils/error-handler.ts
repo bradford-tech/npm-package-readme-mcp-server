@@ -1,14 +1,15 @@
 import { logger } from './logger.js';
 import {
   PackageReadmeMcpError,
-  PackageNotFoundError,
   RateLimitError,
   NetworkError,
 } from '../types/index.js';
 
 export function handleApiError(error: unknown, context: string): never {
+  // PackageReadmeMcpError instances are already domain-typed; let callers
+  // decide whether to log. Re-logging here would duplicate the entry from
+  // the MCP tool dispatch in server.ts.
   if (error instanceof PackageReadmeMcpError) {
-    logger.error(`${context}: ${error.message}`, { code: error.code, details: error.details });
     throw error;
   }
 
@@ -38,7 +39,14 @@ export function handleHttpError(status: number, response: Response, context: str
   
   switch (status) {
     case 404:
-      throw new PackageNotFoundError(context);
+      // Callers that know the resource name (e.g., a package) should
+      // catch this and rethrow as PackageNotFoundError with the right
+      // name. Treating `context` as a name produces nonsense messages.
+      throw new PackageReadmeMcpError(
+        `Not found: ${context}`,
+        'HTTP_NOT_FOUND',
+        404
+      );
     case 429: {
       const retryAfter = response.headers.get('retry-after');
       const retryAfterSeconds = retryAfter ? parseInt(retryAfter, 10) : undefined;

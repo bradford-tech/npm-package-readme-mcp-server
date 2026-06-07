@@ -48,10 +48,10 @@ export class GitHubApiClient {
         logger.debug(`Successfully fetched README from GitHub: ${owner}/${repo}`);
         return readmeContent;
       } catch (error) {
-        if ((error as Error).name === 'AbortError') {
-          handleApiError(new Error('Request timeout'), `GitHub README for ${owner}/${repo}`);
-        }
-        handleApiError(error, `GitHub README for ${owner}/${repo}`);
+        const target = (error as Error).name === 'AbortError'
+          ? new Error('Request timeout')
+          : error;
+        handleApiError(target, `GitHub README for ${owner}/${repo}`);
       } finally {
         clearTimeout(timeoutId);
       }
