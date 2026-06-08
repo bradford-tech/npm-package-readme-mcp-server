@@ -47,11 +47,11 @@ The server exposes three tools to the connected client.
 
 Fetches a package's README and extracts usage examples. Reads from the npm registry first, falls back to the linked GitHub repository.
 
-| Parameter | Type | Default | Description |
-| --- | --- | --- | --- |
-| `package_name` | string | — | The npm package name (required). |
-| `version` | string | `"latest"` | Specific version or dist-tag. |
-| `include_examples` | boolean | `true` | Parse and return usage examples extracted from the README. |
+| Parameter          | Type    | Default    | Description                                                |
+| ------------------ | ------- | ---------- | ---------------------------------------------------------- |
+| `package_name`     | string  | —          | The npm package name (required).                           |
+| `version`          | string  | `"latest"` | Specific version or dist-tag.                              |
+| `include_examples` | boolean | `true`     | Parse and return usage examples extracted from the README. |
 
 Example call:
 
@@ -63,11 +63,11 @@ Example call:
 
 Returns package metadata and download statistics for the latest version.
 
-| Parameter | Type | Default | Description |
-| --- | --- | --- | --- |
-| `package_name` | string | — | The npm package name (required). |
-| `include_dependencies` | boolean | `true` | Include runtime dependencies. |
-| `include_dev_dependencies` | boolean | `false` | Include dev dependencies. |
+| Parameter                  | Type    | Default | Description                      |
+| -------------------------- | ------- | ------- | -------------------------------- |
+| `package_name`             | string  | —       | The npm package name (required). |
+| `include_dependencies`     | boolean | `true`  | Include runtime dependencies.    |
+| `include_dev_dependencies` | boolean | `false` | Include dev dependencies.        |
 
 Example call:
 
@@ -79,12 +79,12 @@ Example call:
 
 Searches the npm registry.
 
-| Parameter | Type | Default | Description |
-| --- | --- | --- | --- |
-| `query` | string | — | Search text (required). |
-| `limit` | number | `20` | Max results, 1–250. |
-| `quality` | number | — | Minimum quality score, 0–1. |
-| `popularity` | number | — | Minimum popularity score, 0–1. |
+| Parameter    | Type   | Default | Description                    |
+| ------------ | ------ | ------- | ------------------------------ |
+| `query`      | string | —       | Search text (required).        |
+| `limit`      | number | `20`    | Max results, 1–250.            |
+| `quality`    | number | —       | Minimum quality score, 0–1.    |
+| `popularity` | number | —       | Minimum popularity score, 0–1. |
 
 Example call:
 

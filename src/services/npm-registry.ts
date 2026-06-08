@@ -1,13 +1,17 @@
-import { logger } from '../utils/logger.js';
-import { handleApiError, handleHttpError, withRetry } from '../utils/error-handler.js';
 import {
-  NpmPackageInfo,
-  NpmVersionInfo,
-  NpmSearchResponse,
   NpmDownloadStats,
+  NpmPackageInfo,
+  NpmSearchResponse,
+  NpmVersionInfo,
   PackageNotFoundError,
   VersionNotFoundError,
 } from '../types/index.js';
+import {
+  handleApiError,
+  handleHttpError,
+  withRetry,
+} from '../utils/error-handler.js';
+import { logger } from '../utils/logger.js';
 
 export class NpmRegistryClient {
   private readonly baseUrl = 'https://registry.npmjs.org';
@@ -16,7 +20,7 @@ export class NpmRegistryClient {
   private readonly timeout: number;
 
   constructor(timeout?: number) {
-    this.timeout = timeout || 30000;
+    this.timeout = timeout ?? 30000;
   }
 
   async packageExists(packageName: string): Promise<boolean> {
@@ -35,50 +39,66 @@ export class NpmRegistryClient {
 
   async getPackageInfo(packageName: string): Promise<NpmPackageInfo> {
     const url = `${this.baseUrl}/${encodeURIComponent(packageName)}`;
-    
-    return withRetry(async () => {
-      logger.debug(`Fetching package info: ${packageName}`);
-      
-      const controller = new AbortController();
-      const timeoutId = setTimeout(() => controller.abort(), this.timeout);
-      
-      try {
-        const response = await fetch(url, {
-          signal: controller.signal,
-          headers: {
-            'Accept': 'application/json',
-            'User-Agent': 'package-readme-mcp/1.0.0',
-          },
-        });
 
-        if (!response.ok) {
-          if (response.status === 404) {
-            throw new PackageNotFoundError(packageName);
+    return withRetry(
+      async () => {
+        logger.debug(`Fetching package info: ${packageName}`);
+
+        const controller = new AbortController();
+        const timeoutId = setTimeout(() => {
+          controller.abort();
+        }, this.timeout);
+
+        try {
+          const response = await fetch(url, {
+            signal: controller.signal,
+            headers: {
+              Accept: 'application/json',
+              'User-Agent': 'package-readme-mcp/1.0.0',
+            },
+          });
+
+          if (!response.ok) {
+            if (response.status === 404) {
+              throw new PackageNotFoundError(packageName);
+            }
+            handleHttpError(
+              response.status,
+              response,
+              `npm registry for package ${packageName}`,
+            );
           }
-          handleHttpError(response.status, response, `npm registry for package ${packageName}`);
-        }
 
-        const data = await response.json() as NpmPackageInfo;
-        logger.debug(`Successfully fetched package info: ${packageName}`);
-        return data;
-      } catch (error) {
-        const target = (error as Error).name === 'AbortError'
-          ? new Error('Request timeout')
-          : error;
-        handleApiError(target, `npm registry for package ${packageName}`);
-      } finally {
-        clearTimeout(timeoutId);
-      }
-    }, 3, 1000, `npm registry getPackageInfo(${packageName})`);
+          const data = (await response.json()) as NpmPackageInfo;
+          logger.debug(`Successfully fetched package info: ${packageName}`);
+          return data;
+        } catch (error) {
+          const target =
+            (error as Error).name === 'AbortError'
+              ? new Error('Request timeout')
+              : error;
+          handleApiError(target, `npm registry for package ${packageName}`);
+        } finally {
+          clearTimeout(timeoutId);
+        }
+      },
+      3,
+      1000,
+      `npm registry getPackageInfo(${packageName})`,
+    );
   }
 
-  async getVersionInfo(packageName: string, version: string): Promise<NpmVersionInfo> {
+  async getVersionInfo(
+    packageName: string,
+    version: string,
+  ): Promise<NpmVersionInfo> {
     const packageInfo = await this.getPackageInfo(packageName);
-    
+
     // Resolve version alias
     let actualVersion = version;
     if (version === 'latest' || packageInfo['dist-tags'][version]) {
-      actualVersion = packageInfo['dist-tags'][version] || packageInfo['dist-tags'].latest;
+      actualVersion =
+        packageInfo['dist-tags'][version] ?? packageInfo['dist-tags'].latest;
     }
 
     const versionInfo = packageInfo.versions[actualVersion];
@@ -91,9 +111,9 @@ export class NpmRegistryClient {
 
   async searchPackages(
     query: string,
-    limit: number = 20,
+    limit = 20,
     quality?: number,
-    popularity?: number
+    popularity?: number,
   ): Promise<NpmSearchResponse> {
     const params = new URLSearchParams({
       text: query,
@@ -110,82 +130,113 @@ export class NpmRegistryClient {
 
     const url = `${this.searchUrl}?${params.toString()}`;
 
-    return withRetry(async () => {
-      logger.debug(`Searching packages: ${query} (limit: ${limit})`);
-      
-      const controller = new AbortController();
-      const timeoutId = setTimeout(() => controller.abort(), this.timeout);
-      
-      try {
-        const response = await fetch(url, {
-          signal: controller.signal,
-          headers: {
-            'Accept': 'application/json',
-            'User-Agent': 'package-readme-mcp/1.0.0',
-          },
-        });
+    return withRetry(
+      async () => {
+        logger.debug(`Searching packages: ${query} (limit: ${limit})`);
 
-        if (!response.ok) {
-          handleHttpError(response.status, response, `npm search for query ${query}`);
+        const controller = new AbortController();
+        const timeoutId = setTimeout(() => {
+          controller.abort();
+        }, this.timeout);
+
+        try {
+          const response = await fetch(url, {
+            signal: controller.signal,
+            headers: {
+              Accept: 'application/json',
+              'User-Agent': 'package-readme-mcp/1.0.0',
+            },
+          });
+
+          if (!response.ok) {
+            handleHttpError(
+              response.status,
+              response,
+              `npm search for query ${query}`,
+            );
+          }
+
+          const data = (await response.json()) as NpmSearchResponse;
+          logger.debug(
+            `Successfully searched packages: ${query}, found ${data.total} results`,
+          );
+          return data;
+        } catch (error) {
+          const target =
+            (error as Error).name === 'AbortError'
+              ? new Error('Request timeout')
+              : error;
+          handleApiError(target, `npm search for query ${query}`);
+        } finally {
+          clearTimeout(timeoutId);
         }
-
-        const data = await response.json() as NpmSearchResponse;
-        logger.debug(`Successfully searched packages: ${query}, found ${data.total} results`);
-        return data;
-      } catch (error) {
-        const target = (error as Error).name === 'AbortError'
-          ? new Error('Request timeout')
-          : error;
-        handleApiError(target, `npm search for query ${query}`);
-      } finally {
-        clearTimeout(timeoutId);
-      }
-    }, 3, 1000, `npm registry searchPackages(${query})`);
+      },
+      3,
+      1000,
+      `npm registry searchPackages(${query})`,
+    );
   }
 
-  async getDownloadStats(packageName: string, period: 'last-day' | 'last-week' | 'last-month'): Promise<NpmDownloadStats> {
+  async getDownloadStats(
+    packageName: string,
+    period: 'last-day' | 'last-week' | 'last-month',
+  ): Promise<NpmDownloadStats> {
     const url = `${this.downloadsUrl}/point/${period}/${encodeURIComponent(packageName)}`;
-    
-    return withRetry(async () => {
-      logger.debug(`Fetching download stats: ${packageName} (${period})`);
-      
-      const controller = new AbortController();
-      const timeoutId = setTimeout(() => controller.abort(), this.timeout);
-      
-      try {
-        const response = await fetch(url, {
-          signal: controller.signal,
-          headers: {
-            'Accept': 'application/json',
-            'User-Agent': 'package-readme-mcp/1.0.0',
-          },
-        });
 
-        if (!response.ok) {
-          if (response.status === 404) {
-            // Package might not have download stats, return zero
-            return {
-              downloads: 0,
-              start: new Date().toISOString().split('T')[0],
-              end: new Date().toISOString().split('T')[0],
-              package: packageName,
-            };
+    return withRetry(
+      async () => {
+        logger.debug(`Fetching download stats: ${packageName} (${period})`);
+
+        const controller = new AbortController();
+        const timeoutId = setTimeout(() => {
+          controller.abort();
+        }, this.timeout);
+
+        try {
+          const response = await fetch(url, {
+            signal: controller.signal,
+            headers: {
+              Accept: 'application/json',
+              'User-Agent': 'package-readme-mcp/1.0.0',
+            },
+          });
+
+          if (!response.ok) {
+            if (response.status === 404) {
+              // Package might not have download stats, return zero
+              return {
+                downloads: 0,
+                start: new Date().toISOString().slice(0, 10),
+                end: new Date().toISOString().slice(0, 10),
+                package: packageName,
+              };
+            }
+            handleHttpError(
+              response.status,
+              response,
+              `npm downloads for package ${packageName}`,
+            );
           }
-          handleHttpError(response.status, response, `npm downloads for package ${packageName}`);
-        }
 
-        const data = await response.json() as NpmDownloadStats;
-        logger.debug(`Successfully fetched download stats: ${packageName} (${period})`);
-        return data;
-      } catch (error) {
-        const target = (error as Error).name === 'AbortError'
-          ? new Error('Request timeout')
-          : error;
-        handleApiError(target, `npm downloads for package ${packageName}`);
-      } finally {
-        clearTimeout(timeoutId);
-      }
-    }, 3, 1000, `npm registry getDownloadStats(${packageName}, ${period})`);
+          const data = (await response.json()) as NpmDownloadStats;
+          logger.debug(
+            `Successfully fetched download stats: ${packageName} (${period})`,
+          );
+          return data;
+        } catch (error) {
+          const target =
+            (error as Error).name === 'AbortError'
+              ? new Error('Request timeout')
+              : error;
+          handleApiError(target, `npm downloads for package ${packageName}`);
+        } finally {
+          clearTimeout(timeoutId);
+        }
+      },
+      3,
+      1000,
+      `npm registry getDownloadStats(${packageName}, ${period})`,
+    );
   }
 
   async getAllDownloadStats(packageName: string): Promise<{
@@ -206,7 +257,10 @@ export class NpmRegistryClient {
         last_month: monthStats.downloads,
       };
     } catch (error) {
-      logger.warn(`Failed to fetch download stats for ${packageName}, using zeros`, { error });
+      logger.warn(
+        `Failed to fetch download stats for ${packageName}, using zeros`,
+        { error },
+      );
       return {
         last_day: 0,
         last_week: 0,

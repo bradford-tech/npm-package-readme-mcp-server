@@ -17,7 +17,11 @@ export class Logger {
 
   constructor(logLevel?: LogLevel | string) {
     if (typeof logLevel === 'string') {
-      this.logLevel = LogLevel[logLevel.toUpperCase() as keyof typeof LogLevel] ?? LogLevel.INFO;
+      const key = logLevel.toUpperCase();
+      this.logLevel =
+        key in LogLevel
+          ? LogLevel[key as keyof typeof LogLevel]
+          : LogLevel.INFO;
     } else {
       this.logLevel = logLevel ?? LogLevel.INFO;
     }
@@ -27,9 +31,10 @@ export class Logger {
     if (level > this.logLevel) {
       return;
     }
-    const line = data !== undefined
-      ? `[${LEVEL_NAMES[level]}] ${message} ${formatData(data)}`
-      : `[${LEVEL_NAMES[level]}] ${message}`;
+    const line =
+      data !== undefined
+        ? `[${LEVEL_NAMES[level]}] ${message} ${formatData(data)}`
+        : `[${LEVEL_NAMES[level]}] ${message}`;
     // stdout is reserved for MCP JSON-RPC traffic; logs go to stderr.
     process.stderr.write(line + '\n');
   }

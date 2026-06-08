@@ -1,5 +1,5 @@
-import { validatePackageName } from '../src/utils/validators.js';
 import { PackageReadmeMcpError } from '../src/types/index.js';
+import { validatePackageName } from '../src/utils/validators.js';
 
 describe('NPM Package Validation Tests', () => {
   describe('validatePackageName', () => {
@@ -27,21 +27,27 @@ describe('NPM Package Validation Tests', () => {
         '@scope/package',
         '@babel/preset-env',
         '@angular/core',
-        '@vue/cli'
+        '@vue/cli',
       ];
 
-      validNames.forEach(name => {
-        expect(() => validatePackageName(name)).not.toThrow();
+      validNames.forEach((name) => {
+        expect(() => {
+          validatePackageName(name);
+        }).not.toThrow();
       });
     });
 
     describe('invalid package names should fail with specific errors', () => {
       test('lodash should pass (valid)', () => {
-        expect(() => validatePackageName('lodash')).not.toThrow();
+        expect(() => {
+          validatePackageName('lodash');
+        }).not.toThrow();
       });
 
       test('LODASH should fail (invalid - uppercase)', () => {
-        expect(() => validatePackageName('LODASH')).toThrow(PackageReadmeMcpError);
+        expect(() => {
+          validatePackageName('LODASH');
+        }).toThrow(PackageReadmeMcpError);
         try {
           validatePackageName('LODASH');
         } catch (error) {
@@ -53,7 +59,9 @@ describe('NPM Package Validation Tests', () => {
       });
 
       test('my package should fail (invalid - spaces)', () => {
-        expect(() => validatePackageName('my package')).toThrow(PackageReadmeMcpError);
+        expect(() => {
+          validatePackageName('my package');
+        }).toThrow(PackageReadmeMcpError);
         try {
           validatePackageName('my package');
         } catch (error) {
@@ -65,23 +73,31 @@ describe('NPM Package Validation Tests', () => {
       });
 
       test('@babel/core should pass (valid scoped)', () => {
-        expect(() => validatePackageName('@babel/core')).not.toThrow();
+        expect(() => {
+          validatePackageName('@babel/core');
+        }).not.toThrow();
       });
 
       test('@babel should fail (invalid - missing package)', () => {
-        expect(() => validatePackageName('@babel')).toThrow(PackageReadmeMcpError);
+        expect(() => {
+          validatePackageName('@babel');
+        }).toThrow(PackageReadmeMcpError);
         try {
           validatePackageName('@babel');
         } catch (error) {
           expect(error).toBeInstanceOf(PackageReadmeMcpError);
-          expect(error.message).toContain('must include a slash after the scope');
+          expect(error.message).toContain(
+            'must include a slash after the scope',
+          );
           expect(error.message).toContain('@babel/package-name');
           expect(error.code).toBe('INVALID_PACKAGE_NAME');
         }
       });
 
       test('@/core should fail (invalid - missing scope)', () => {
-        expect(() => validatePackageName('@/core')).toThrow(PackageReadmeMcpError);
+        expect(() => {
+          validatePackageName('@/core');
+        }).toThrow(PackageReadmeMcpError);
         try {
           validatePackageName('@/core');
         } catch (error) {
@@ -92,29 +108,39 @@ describe('NPM Package Validation Tests', () => {
       });
 
       test('@scope/ should fail (invalid - missing package name)', () => {
-        expect(() => validatePackageName('@scope/')).toThrow(PackageReadmeMcpError);
+        expect(() => {
+          validatePackageName('@scope/');
+        }).toThrow(PackageReadmeMcpError);
         try {
           validatePackageName('@scope/');
         } catch (error) {
           expect(error).toBeInstanceOf(PackageReadmeMcpError);
-          expect(error.message).toContain('must have a package name after the slash');
+          expect(error.message).toContain(
+            'must have a package name after the slash',
+          );
           expect(error.code).toBe('INVALID_PACKAGE_NAME');
         }
       });
 
       test('@ should fail (invalid - just @)', () => {
-        expect(() => validatePackageName('@')).toThrow(PackageReadmeMcpError);
+        expect(() => {
+          validatePackageName('@');
+        }).toThrow(PackageReadmeMcpError);
         try {
           validatePackageName('@');
         } catch (error) {
           expect(error).toBeInstanceOf(PackageReadmeMcpError);
-          expect(error.message).toContain('must include a slash after the scope');
+          expect(error.message).toContain(
+            'must include a slash after the scope',
+          );
           expect(error.code).toBe('INVALID_PACKAGE_NAME');
         }
       });
 
       test('empty string should fail', () => {
-        expect(() => validatePackageName('')).toThrow(PackageReadmeMcpError);
+        expect(() => {
+          validatePackageName('');
+        }).toThrow(PackageReadmeMcpError);
         try {
           validatePackageName('');
         } catch (error) {
@@ -125,7 +151,9 @@ describe('NPM Package Validation Tests', () => {
       });
 
       test('package names starting with dots should fail', () => {
-        expect(() => validatePackageName('.package')).toThrow(PackageReadmeMcpError);
+        expect(() => {
+          validatePackageName('.package');
+        }).toThrow(PackageReadmeMcpError);
         try {
           validatePackageName('.package');
         } catch (error) {
@@ -137,7 +165,9 @@ describe('NPM Package Validation Tests', () => {
       });
 
       test('package names ending with dots should fail', () => {
-        expect(() => validatePackageName('package.')).toThrow(PackageReadmeMcpError);
+        expect(() => {
+          validatePackageName('package.');
+        }).toThrow(PackageReadmeMcpError);
         try {
           validatePackageName('package.');
         } catch (error) {
@@ -149,7 +179,9 @@ describe('NPM Package Validation Tests', () => {
       });
 
       test('package names starting with hyphens should fail', () => {
-        expect(() => validatePackageName('-package')).toThrow(PackageReadmeMcpError);
+        expect(() => {
+          validatePackageName('-package');
+        }).toThrow(PackageReadmeMcpError);
         try {
           validatePackageName('-package');
         } catch (error) {
@@ -161,7 +193,9 @@ describe('NPM Package Validation Tests', () => {
       });
 
       test('package names ending with hyphens should fail', () => {
-        expect(() => validatePackageName('package-')).toThrow(PackageReadmeMcpError);
+        expect(() => {
+          validatePackageName('package-');
+        }).toThrow(PackageReadmeMcpError);
         try {
           validatePackageName('package-');
         } catch (error) {
@@ -173,7 +207,9 @@ describe('NPM Package Validation Tests', () => {
       });
 
       test('package names with consecutive dots should fail', () => {
-        expect(() => validatePackageName('package..name')).toThrow(PackageReadmeMcpError);
+        expect(() => {
+          validatePackageName('package..name');
+        }).toThrow(PackageReadmeMcpError);
         try {
           validatePackageName('package..name');
         } catch (error) {
@@ -185,23 +221,37 @@ describe('NPM Package Validation Tests', () => {
       });
 
       test('package names with underscore-hyphen sequences should fail', () => {
-        expect(() => validatePackageName('package_-name')).toThrow(PackageReadmeMcpError);
-        expect(() => validatePackageName('package-_name')).toThrow(PackageReadmeMcpError);
+        expect(() => {
+          validatePackageName('package_-name');
+        }).toThrow(PackageReadmeMcpError);
+        expect(() => {
+          validatePackageName('package-_name');
+        }).toThrow(PackageReadmeMcpError);
         try {
           validatePackageName('package_-name');
         } catch (error) {
           expect(error).toBeInstanceOf(PackageReadmeMcpError);
-          expect(error.message).toContain('cannot contain underscore-hyphen sequences');
+          expect(error.message).toContain(
+            'cannot contain underscore-hyphen sequences',
+          );
           expect(error.message).toContain('package-name');
           expect(error.code).toBe('INVALID_PACKAGE_NAME');
         }
       });
 
       test('reserved names should fail', () => {
-        const reservedNames = ['node_modules', 'favicon.ico', 'npm', 'node', 'javascript'];
-        
-        reservedNames.forEach(name => {
-          expect(() => validatePackageName(name)).toThrow(PackageReadmeMcpError);
+        const reservedNames = [
+          'node_modules',
+          'favicon.ico',
+          'npm',
+          'node',
+          'javascript',
+        ];
+
+        reservedNames.forEach((name) => {
+          expect(() => {
+            validatePackageName(name);
+          }).toThrow(PackageReadmeMcpError);
           try {
             validatePackageName(name);
           } catch (error) {
@@ -213,7 +263,9 @@ describe('NPM Package Validation Tests', () => {
       });
 
       test('scoped packages with multiple slashes should fail', () => {
-        expect(() => validatePackageName('@scope/package/extra')).toThrow(PackageReadmeMcpError);
+        expect(() => {
+          validatePackageName('@scope/package/extra');
+        }).toThrow(PackageReadmeMcpError);
         try {
           validatePackageName('@scope/package/extra');
         } catch (error) {
@@ -240,17 +292,21 @@ describe('NPM Package Validation Tests', () => {
           'package|name',
           'package\\name',
           'package"name',
-          "package'name"
+          "package'name",
         ];
 
-        invalidNames.forEach(name => {
-          expect(() => validatePackageName(name)).toThrow(PackageReadmeMcpError);
+        invalidNames.forEach((name) => {
+          expect(() => {
+            validatePackageName(name);
+          }).toThrow(PackageReadmeMcpError);
         });
       });
 
       test('excessively long package names should fail', () => {
         const longName = 'a'.repeat(215);
-        expect(() => validatePackageName(longName)).toThrow(PackageReadmeMcpError);
+        expect(() => {
+          validatePackageName(longName);
+        }).toThrow(PackageReadmeMcpError);
         try {
           validatePackageName(longName);
         } catch (error) {
@@ -261,18 +317,30 @@ describe('NPM Package Validation Tests', () => {
       });
 
       test('non-string input should fail', () => {
-        expect(() => validatePackageName(123)).toThrow(PackageReadmeMcpError);
-        expect(() => validatePackageName(null)).toThrow(PackageReadmeMcpError);
-        expect(() => validatePackageName(undefined)).toThrow(PackageReadmeMcpError);
-        expect(() => validatePackageName({})).toThrow(PackageReadmeMcpError);
+        expect(() => {
+          validatePackageName(123);
+        }).toThrow(PackageReadmeMcpError);
+        expect(() => {
+          validatePackageName(null);
+        }).toThrow(PackageReadmeMcpError);
+        expect(() => {
+          validatePackageName(undefined);
+        }).toThrow(PackageReadmeMcpError);
+        expect(() => {
+          validatePackageName({});
+        }).toThrow(PackageReadmeMcpError);
       });
     });
 
     test('package names with whitespace should be trimmed', () => {
       // Note: We're not testing the return value since validatePackageName doesn't return anything
       // We're just checking that it doesn't throw for valid names after trimming
-      expect(() => validatePackageName('  lodash  ')).not.toThrow();
-      expect(() => validatePackageName('\t@babel/core\n')).not.toThrow();
+      expect(() => {
+        validatePackageName('  lodash  ');
+      }).not.toThrow();
+      expect(() => {
+        validatePackageName('\t@babel/core\n');
+      }).not.toThrow();
     });
   });
 });

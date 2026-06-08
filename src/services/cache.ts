@@ -1,5 +1,5 @@
-import { logger } from '../utils/logger.js';
 import { CacheEntry, CacheOptions } from '../types/index.js';
+import { logger } from '../utils/logger.js';
 
 interface SizedEntry<T> extends CacheEntry<T> {
   size: number;
@@ -13,21 +13,24 @@ export class MemoryCache {
   private readonly cleanupInterval: NodeJS.Timeout;
 
   constructor(options: CacheOptions = {}) {
-    this.defaultTtl = options.ttl || 3600 * 1000; // 1 hour default in milliseconds
-    this.maxSize = options.maxSize || 104857600; // 100MB default
+    this.defaultTtl = options.ttl ?? 3600 * 1000; // 1 hour default in milliseconds
+    this.maxSize = options.maxSize ?? 104857600; // 100MB default
 
     // Clean up expired entries every 5 minutes
-    this.cleanupInterval = setInterval(() => {
-      this.cleanup();
-    }, 5 * 60 * 1000);
+    this.cleanupInterval = setInterval(
+      () => {
+        this.cleanup();
+      },
+      5 * 60 * 1000,
+    );
   }
 
-  set<T>(key: string, value: T, ttl?: number): void {
-    const actualTtl = ttl || this.defaultTtl;
+  set(key: string, value: unknown, ttl?: number): void {
+    const actualTtl = ttl ?? this.defaultTtl;
     const timestamp = Date.now();
     const entrySize = estimateEntrySize(key, value);
 
-    const entry: SizedEntry<T> = {
+    const entry: SizedEntry<unknown> = {
       data: value,
       timestamp,
       ttl: actualTtl,
@@ -50,6 +53,7 @@ export class MemoryCache {
     logger.debug(`Cache set: ${key} (TTL: ${actualTtl}ms)`);
   }
 
+  // eslint-disable-next-line @typescript-eslint/no-unnecessary-type-parameters -- T narrows the unknown stored value at the call site.
   get<T>(key: string): T | null {
     const entry = this.cache.get(key) as SizedEntry<T> | undefined;
 
@@ -180,26 +184,36 @@ function estimateEntrySize(key: string, value: unknown): number {
 
 // Create cache key helpers
 export const createCacheKey = {
-  packageInfo: (packageName: string): string =>
-    `pkg_info:${packageName}`,
+  packageInfo: (packageName: string): string => `pkg_info:${packageName}`,
 
   packageReadme: (packageName: string, version: string): string =>
     `pkg_readme:${packageName}:${version}`,
-  
-  searchResults: (query: string, limit: number, quality?: number, popularity?: number): string => {
+
+  searchResults: (
+    query: string,
+    limit: number,
+    quality?: number,
+    popularity?: number,
+  ): string => {
     const queryHash = Buffer.from(query).toString('base64');
     const params = [queryHash, limit.toString()];
-    if (quality !== undefined) {params.push(`q:${quality}`);}
-    if (popularity !== undefined) {params.push(`p:${popularity}`);}
+    if (quality !== undefined) {
+      params.push(`q:${quality}`);
+    }
+    if (popularity !== undefined) {
+      params.push(`p:${popularity}`);
+    }
     return `search:${params.join(':')}`;
   },
-  
-  downloadStats: (packageName: string, period: string): string => 
+
+  downloadStats: (packageName: string, period: string): string =>
     `stats:${packageName}:${period}:${new Date().toISOString().split('T')[0]}`, // Include date for daily invalidation
 };
 
 // Global cache instance. CACHE_TTL is interpreted as seconds (matches README).
 const ttlSeconds = Number(process.env.CACHE_TTL);
 export const cache = new MemoryCache(
-  Number.isFinite(ttlSeconds) && ttlSeconds > 0 ? { ttl: ttlSeconds * 1000 } : {},
+  Number.isFinite(ttlSeconds) && ttlSeconds > 0
+    ? { ttl: ttlSeconds * 1000 }
+    : {},
 );

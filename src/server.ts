@@ -9,16 +9,16 @@ import {
   McpError,
 } from '@modelcontextprotocol/sdk/types.js';
 
-import { logger } from './utils/logger.js';
-import { getPackageReadme } from './tools/get-package-readme.js';
 import { getPackageInfo } from './tools/get-package-info.js';
+import { getPackageReadme } from './tools/get-package-readme.js';
 import { searchPackages } from './tools/search-packages.js';
 import {
-  GetPackageReadmeParams,
   GetPackageInfoParams,
-  SearchPackagesParams,
+  GetPackageReadmeParams,
   PackageReadmeMcpError,
+  SearchPackagesParams,
 } from './types/index.js';
+import { logger } from './utils/logger.js';
 
 const TOOL_DEFINITIONS = {
   get_readme_from_npm: {
@@ -47,7 +47,8 @@ const TOOL_DEFINITIONS = {
   },
   get_package_info_from_npm: {
     name: 'get_package_info_from_npm',
-    description: 'Get package basic information and dependencies from npm registry',
+    description:
+      'Get package basic information and dependencies from npm registry',
     inputSchema: {
       type: 'object',
       properties: {
@@ -62,7 +63,8 @@ const TOOL_DEFINITIONS = {
         },
         include_dev_dependencies: {
           type: 'boolean',
-          description: 'Whether to include development dependencies (default: false)',
+          description:
+            'Whether to include development dependencies (default: false)',
           default: false,
         },
       },
@@ -105,9 +107,11 @@ const TOOL_DEFINITIONS = {
 } as const;
 
 export class PackageReadmeMcpServer {
+  // eslint-disable-next-line @typescript-eslint/no-deprecated -- Server is the low-level API; migration to McpServer is tracked separately.
   private server: Server;
 
   constructor() {
+    // eslint-disable-next-line @typescript-eslint/no-deprecated -- See above.
     this.server = new Server(
       {
         name: 'package-readme-mcp',
@@ -119,7 +123,7 @@ export class PackageReadmeMcpServer {
           prompts: {},
           resources: {},
         },
-      }
+      },
     );
 
     this.setupHandlers();
@@ -127,80 +131,87 @@ export class PackageReadmeMcpServer {
 
   private setupHandlers(): void {
     // List available tools
-    this.server.setRequestHandler(ListToolsRequestSchema, async () => {
+    this.server.setRequestHandler(ListToolsRequestSchema, () => {
       return {
         tools: Object.values(TOOL_DEFINITIONS),
-      }
+      };
     });
 
     // Handle prompts list
-    this.server.setRequestHandler(ListPromptsRequestSchema, async () => {
+    this.server.setRequestHandler(ListPromptsRequestSchema, () => {
       return { prompts: [] };
     });
 
     // Handle resources list
-    this.server.setRequestHandler(ListResourcesRequestSchema, async () => {
+    this.server.setRequestHandler(ListResourcesRequestSchema, () => {
       return { resources: [] };
     });
 
     // Handle tool calls
     this.server.setRequestHandler(CallToolRequestSchema, async (request) => {
       const { name, arguments: args } = request.params;
-      
 
       try {
         // Validate that args is an object
         if (!args || typeof args !== 'object') {
           throw new McpError(
             ErrorCode.InvalidParams,
-            'Tool arguments must be an object'
+            'Tool arguments must be an object',
           );
         }
 
         switch (name) {
           case 'get_readme_from_npm':
-            return await this.handleGetPackageReadme(this.validateGetPackageReadmeParams(args));
-          
+            return await this.handleGetPackageReadme(
+              this.validateGetPackageReadmeParams(args),
+            );
+
           case 'get_package_info_from_npm':
-            return await this.handleGetPackageInfo(this.validateGetPackageInfoParams(args));
-          
+            return await this.handleGetPackageInfo(
+              this.validateGetPackageInfoParams(args),
+            );
+
           case 'search_packages_from_npm':
-            return await this.handleSearchPackages(this.validateSearchPackagesParams(args));
-          
+            return await this.handleSearchPackages(
+              this.validateSearchPackagesParams(args),
+            );
+
           default:
             throw new McpError(
               ErrorCode.MethodNotFound,
-              `Unknown tool: ${name}`
+              `Unknown tool: ${name}`,
             );
         }
       } catch (error) {
         logger.error(`Tool execution failed: ${name}`, { error, args });
-        
+
         if (error instanceof PackageReadmeMcpError) {
           throw new McpError(
             this.mapErrorCode(error.code),
             error.message,
-            error.details
+            error.details,
           );
         }
-        
+
         if (error instanceof McpError) {
           throw error;
         }
-        
+
         throw new McpError(
           ErrorCode.InternalError,
-          `Internal error: ${error instanceof Error ? error.message : String(error)}`
+          `Internal error: ${error instanceof Error ? error.message : String(error)}`,
         );
       }
     });
   }
 
-  private validateGetPackageReadmeParams(args: unknown): GetPackageReadmeParams {
+  private validateGetPackageReadmeParams(
+    args: unknown,
+  ): GetPackageReadmeParams {
     if (!args || typeof args !== 'object') {
       throw new McpError(
         ErrorCode.InvalidParams,
-        'Arguments must be an object'
+        'Arguments must be an object',
       );
     }
 
@@ -210,37 +221,37 @@ export class PackageReadmeMcpServer {
     if (!params.package_name || typeof params.package_name !== 'string') {
       throw new McpError(
         ErrorCode.InvalidParams,
-        'package_name is required and must be a string'
+        'package_name is required and must be a string',
       );
     }
 
     // Validate optional parameters
     if (params.version !== undefined && typeof params.version !== 'string') {
-      throw new McpError(
-        ErrorCode.InvalidParams,
-        'version must be a string'
-      );
+      throw new McpError(ErrorCode.InvalidParams, 'version must be a string');
     }
 
-    if (params.include_examples !== undefined && typeof params.include_examples !== 'boolean') {
+    if (
+      params.include_examples !== undefined &&
+      typeof params.include_examples !== 'boolean'
+    ) {
       throw new McpError(
         ErrorCode.InvalidParams,
-        'include_examples must be a boolean'
+        'include_examples must be a boolean',
       );
     }
 
     const result: GetPackageReadmeParams = {
       package_name: params.package_name,
     };
-    
+
     if (params.version !== undefined) {
-      result.version = params.version as string;
+      result.version = params.version;
     }
-    
+
     if (params.include_examples !== undefined) {
-      result.include_examples = params.include_examples as boolean;
+      result.include_examples = params.include_examples;
     }
-    
+
     return result;
   }
 
@@ -250,9 +261,9 @@ export class PackageReadmeMcpServer {
       content: [
         {
           type: 'text',
-          text: JSON.stringify(result, null, 2)
-        }
-      ]
+          text: JSON.stringify(result, null, 2),
+        },
+      ],
     };
   }
 
@@ -260,7 +271,7 @@ export class PackageReadmeMcpServer {
     if (!args || typeof args !== 'object') {
       throw new McpError(
         ErrorCode.InvalidParams,
-        'Arguments must be an object'
+        'Arguments must be an object',
       );
     }
 
@@ -270,37 +281,43 @@ export class PackageReadmeMcpServer {
     if (!params.package_name || typeof params.package_name !== 'string') {
       throw new McpError(
         ErrorCode.InvalidParams,
-        'package_name is required and must be a string'
+        'package_name is required and must be a string',
       );
     }
 
     // Validate optional parameters
-    if (params.include_dependencies !== undefined && typeof params.include_dependencies !== 'boolean') {
+    if (
+      params.include_dependencies !== undefined &&
+      typeof params.include_dependencies !== 'boolean'
+    ) {
       throw new McpError(
         ErrorCode.InvalidParams,
-        'include_dependencies must be a boolean'
+        'include_dependencies must be a boolean',
       );
     }
 
-    if (params.include_dev_dependencies !== undefined && typeof params.include_dev_dependencies !== 'boolean') {
+    if (
+      params.include_dev_dependencies !== undefined &&
+      typeof params.include_dev_dependencies !== 'boolean'
+    ) {
       throw new McpError(
         ErrorCode.InvalidParams,
-        'include_dev_dependencies must be a boolean'
+        'include_dev_dependencies must be a boolean',
       );
     }
 
     const result: GetPackageInfoParams = {
       package_name: params.package_name,
     };
-    
+
     if (params.include_dependencies !== undefined) {
-      result.include_dependencies = params.include_dependencies as boolean;
+      result.include_dependencies = params.include_dependencies;
     }
-    
+
     if (params.include_dev_dependencies !== undefined) {
-      result.include_dev_dependencies = params.include_dev_dependencies as boolean;
+      result.include_dev_dependencies = params.include_dev_dependencies;
     }
-    
+
     return result;
   }
 
@@ -310,9 +327,9 @@ export class PackageReadmeMcpServer {
       content: [
         {
           type: 'text',
-          text: JSON.stringify(result, null, 2)
-        }
-      ]
+          text: JSON.stringify(result, null, 2),
+        },
+      ],
     };
   }
 
@@ -320,7 +337,7 @@ export class PackageReadmeMcpServer {
     if (!args || typeof args !== 'object') {
       throw new McpError(
         ErrorCode.InvalidParams,
-        'Arguments must be an object'
+        'Arguments must be an object',
       );
     }
 
@@ -330,34 +347,46 @@ export class PackageReadmeMcpServer {
     if (!params.query || typeof params.query !== 'string') {
       throw new McpError(
         ErrorCode.InvalidParams,
-        'query is required and must be a string'
+        'query is required and must be a string',
       );
     }
 
     // Validate optional parameters
     if (params.limit !== undefined) {
-      if (typeof params.limit !== 'number' || params.limit < 1 || params.limit > 250) {
+      if (
+        typeof params.limit !== 'number' ||
+        params.limit < 1 ||
+        params.limit > 250
+      ) {
         throw new McpError(
           ErrorCode.InvalidParams,
-          'limit must be a number between 1 and 250'
+          'limit must be a number between 1 and 250',
         );
       }
     }
 
     if (params.quality !== undefined) {
-      if (typeof params.quality !== 'number' || params.quality < 0 || params.quality > 1) {
+      if (
+        typeof params.quality !== 'number' ||
+        params.quality < 0 ||
+        params.quality > 1
+      ) {
         throw new McpError(
           ErrorCode.InvalidParams,
-          'quality must be a number between 0 and 1'
+          'quality must be a number between 0 and 1',
         );
       }
     }
 
     if (params.popularity !== undefined) {
-      if (typeof params.popularity !== 'number' || params.popularity < 0 || params.popularity > 1) {
+      if (
+        typeof params.popularity !== 'number' ||
+        params.popularity < 0 ||
+        params.popularity > 1
+      ) {
         throw new McpError(
           ErrorCode.InvalidParams,
-          'popularity must be a number between 0 and 1'
+          'popularity must be a number between 0 and 1',
         );
       }
     }
@@ -365,19 +394,19 @@ export class PackageReadmeMcpServer {
     const result: SearchPackagesParams = {
       query: params.query,
     };
-    
+
     if (params.limit !== undefined) {
-      result.limit = params.limit as number;
+      result.limit = params.limit;
     }
-    
+
     if (params.quality !== undefined) {
-      result.quality = params.quality as number;
+      result.quality = params.quality;
     }
-    
+
     if (params.popularity !== undefined) {
-      result.popularity = params.popularity as number;
+      result.popularity = params.popularity;
     }
-    
+
     return result;
   }
 
@@ -387,9 +416,9 @@ export class PackageReadmeMcpServer {
       content: [
         {
           type: 'text',
-          text: JSON.stringify(result, null, 2)
-        }
-      ]
+          text: JSON.stringify(result, null, 2),
+        },
+      ],
     };
   }
 

@@ -1,9 +1,9 @@
-import { logger } from './logger.js';
 import {
+  NetworkError,
   PackageReadmeMcpError,
   RateLimitError,
-  NetworkError,
 } from '../types/index.js';
+import { logger } from './logger.js';
 
 export function handleApiError(error: unknown, context: string): never {
   // PackageReadmeMcpError instances are already domain-typed; let callers
@@ -14,29 +14,54 @@ export function handleApiError(error: unknown, context: string): never {
   }
 
   if (error instanceof Error) {
-    if (error.message.includes('ENOTFOUND') || error.message.includes('ECONNREFUSED')) {
-      const networkError = new NetworkError(`Connection failed in ${context}`, error);
+    if (
+      error.message.includes('ENOTFOUND') ||
+      error.message.includes('ECONNREFUSED')
+    ) {
+      const networkError = new NetworkError(
+        `Connection failed in ${context}`,
+        error,
+      );
       logger.error(networkError.message, { originalError: error.message });
       throw networkError;
     }
 
     if (error.message.includes('timeout')) {
-      const networkError = new NetworkError(`Request timeout in ${context}`, error);
+      const networkError = new NetworkError(
+        `Request timeout in ${context}`,
+        error,
+      );
       logger.error(networkError.message, { originalError: error.message });
       throw networkError;
     }
 
-    logger.error(`Unexpected error in ${context}: ${error.message}`, { stack: error.stack });
-    throw new PackageReadmeMcpError(`Unexpected error in ${context}`, 'UNEXPECTED_ERROR', undefined, error);
+    logger.error(`Unexpected error in ${context}: ${error.message}`, {
+      stack: error.stack,
+    });
+    throw new PackageReadmeMcpError(
+      `Unexpected error in ${context}`,
+      'UNEXPECTED_ERROR',
+      undefined,
+      error,
+    );
   }
 
   logger.error(`Unknown error in ${context}`, { error });
-  throw new PackageReadmeMcpError(`Unknown error in ${context}`, 'UNKNOWN_ERROR', undefined, error);
+  throw new PackageReadmeMcpError(
+    `Unknown error in ${context}`,
+    'UNKNOWN_ERROR',
+    undefined,
+    error,
+  );
 }
 
-export function handleHttpError(status: number, response: Response, context: string): never {
+export function handleHttpError(
+  status: number,
+  response: Response,
+  context: string,
+): never {
   const statusText = response.statusText || 'Unknown error';
-  
+
   switch (status) {
     case 404:
       // Callers that know the resource name (e.g., a package) should
@@ -45,11 +70,13 @@ export function handleHttpError(status: number, response: Response, context: str
       throw new PackageReadmeMcpError(
         `Not found: ${context}`,
         'HTTP_NOT_FOUND',
-        404
+        404,
       );
     case 429: {
       const retryAfter = response.headers.get('retry-after');
-      const retryAfterSeconds = retryAfter ? parseInt(retryAfter, 10) : undefined;
+      const retryAfterSeconds = retryAfter
+        ? parseInt(retryAfter, 10)
+        : undefined;
       throw new RateLimitError(context, retryAfterSeconds);
     }
     case 500:
@@ -61,16 +88,16 @@ export function handleHttpError(status: number, response: Response, context: str
       throw new PackageReadmeMcpError(
         `HTTP error ${status}: ${statusText}`,
         'HTTP_ERROR',
-        status
+        status,
       );
   }
 }
 
 export async function withRetry<T>(
   fn: () => Promise<T>,
-  maxRetries: number = 3,
-  baseDelay: number = 1000,
-  context: string = 'operation'
+  maxRetries = 3,
+  baseDelay = 1000,
+  context = 'operation',
 ): Promise<T> {
   let lastError: Error | undefined;
 
@@ -79,24 +106,38 @@ export async function withRetry<T>(
       return await fn();
     } catch (error) {
       lastError = error instanceof Error ? error : new Error(String(error));
-      
+
       if (attempt === maxRetries) {
-        logger.error(`${context} failed after ${maxRetries + 1} attempts`, { error: lastError.message });
+        logger.error(`${context} failed after ${maxRetries + 1} attempts`, {
+          error: lastError.message,
+        });
         break;
       }
 
       if (error instanceof RateLimitError) {
-        const retryAfter = (error.details as { retryAfter?: number })?.retryAfter;
-        const delay = retryAfter ? retryAfter * 1000 : baseDelay * Math.pow(2, attempt);
-        logger.warn(`${context} rate limited, retrying in ${delay}ms (attempt ${attempt + 1}/${maxRetries + 1})`);
+        const retryAfter = (error.details as { retryAfter?: number })
+          .retryAfter;
+        const delay = retryAfter
+          ? retryAfter * 1000
+          : baseDelay * Math.pow(2, attempt);
+        logger.warn(
+          `${context} rate limited, retrying in ${delay}ms (attempt ${attempt + 1}/${maxRetries + 1})`,
+        );
         await sleep(delay);
         continue;
       }
 
-      if (error instanceof NetworkError || 
-          (error instanceof PackageReadmeMcpError && error.statusCode && error.statusCode >= 500)) {
+      if (
+        error instanceof NetworkError ||
+        (error instanceof PackageReadmeMcpError &&
+          error.statusCode &&
+          error.statusCode >= 500)
+      ) {
         const delay = baseDelay * Math.pow(2, attempt);
-        logger.warn(`${context} failed, retrying in ${delay}ms (attempt ${attempt + 1}/${maxRetries + 1})`, { error: lastError.message });
+        logger.warn(
+          `${context} failed, retrying in ${delay}ms (attempt ${attempt + 1}/${maxRetries + 1})`,
+          { error: lastError.message },
+        );
         await sleep(delay);
         continue;
       }
@@ -112,5 +153,5 @@ export async function withRetry<T>(
 }
 
 function sleep(ms: number): Promise<void> {
-  return new Promise(resolve => setTimeout(resolve, ms));
+  return new Promise((resolve) => setTimeout(resolve, ms));
 }

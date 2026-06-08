@@ -63,8 +63,8 @@ export interface PackageSearchResult {
 
 // Tool Parameters
 export interface GetPackageReadmeParams {
-  package_name: string;    // Package name (required)
-  version?: string;        // Version specification (optional, default: "latest")
+  package_name: string; // Package name (required)
+  version?: string; // Version specification (optional, default: "latest")
   include_examples?: boolean; // Whether to include examples (optional, default: true)
 }
 
@@ -75,10 +75,10 @@ export interface GetPackageInfoParams {
 }
 
 export interface SearchPackagesParams {
-  query: string;          // Search query
-  limit?: number;         // Maximum number of results (default: 20)
-  quality?: number;       // Minimum quality score (0-1)
-  popularity?: number;    // Minimum popularity score (0-1)
+  query: string; // Search query
+  limit?: number; // Maximum number of results (default: 20)
+  quality?: number; // Minimum quality score (0-1)
+  popularity?: number; // Minimum popularity score (0-1)
 }
 
 // Tool Responses
@@ -136,9 +136,7 @@ export interface NpmPackageInfo {
     latest: string;
     [tag: string]: string;
   };
-  versions: {
-    [version: string]: NpmVersionInfo;
-  };
+  versions: Record<string, NpmVersionInfo>;
   time: {
     created: string;
     modified: string;
@@ -267,7 +265,7 @@ export class PackageReadmeMcpError extends Error {
     message: string,
     public code: string,
     public statusCode?: number,
-    public details?: unknown
+    public details?: unknown,
   ) {
     super(message);
     this.name = 'PackageReadmeMcpError';
@@ -282,18 +280,29 @@ export class PackageNotFoundError extends PackageReadmeMcpError {
 
 export class VersionNotFoundError extends PackageReadmeMcpError {
   constructor(packageName: string, version: string) {
-    super(`Version '${version}' of package '${packageName}' not found`, 'VERSION_NOT_FOUND', 404);
+    super(
+      `Version '${version}' of package '${packageName}' not found`,
+      'VERSION_NOT_FOUND',
+      404,
+    );
   }
 }
 
 export class RateLimitError extends PackageReadmeMcpError {
   constructor(service: string, retryAfter?: number) {
-    super(`Rate limit exceeded for ${service}`, 'RATE_LIMIT_EXCEEDED', 429, { retryAfter });
+    super(`Rate limit exceeded for ${service}`, 'RATE_LIMIT_EXCEEDED', 429, {
+      retryAfter,
+    });
   }
 }
 
 export class NetworkError extends PackageReadmeMcpError {
   constructor(message: string, originalError?: Error) {
-    super(`Network error: ${message}`, 'NETWORK_ERROR', undefined, originalError);
+    super(
+      `Network error: ${message}`,
+      'NETWORK_ERROR',
+      undefined,
+      originalError,
+    );
   }
 }

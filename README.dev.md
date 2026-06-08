@@ -17,14 +17,16 @@ npm install
 
 ## Scripts
 
-| Script | Description |
-| --- | --- |
-| `npm run dev` | Run the server directly from TypeScript via `tsx`. |
-| `npm run build` | Compile TypeScript to `dist/`. |
-| `npm start` | Run the built server from `dist/`. |
-| `npm run typecheck` | Type-check without emitting. |
-| `npm run lint` | Lint `src/**/*.ts` with ESLint. |
-| `npm test` | Run the Jest test suite. |
+| Script              | Description                                        |
+| ------------------- | -------------------------------------------------- |
+| `npm run dev`       | Run the server directly from TypeScript via `tsx`. |
+| `npm run build`     | Compile TypeScript to `dist/`.                     |
+| `npm start`         | Run the built server from `dist/`.                 |
+| `npm run typecheck` | Type-check without emitting.                       |
+| `npm run lint`      | Lint the project with ESLint.                      |
+| `npm run format`    | Check formatting with Prettier.                    |
+| `npm run fix`       | Apply Prettier + ESLint autofixes.                 |
+| `npm test`          | Run the Vitest test suite.                         |
 
 ## Project layout
 

@@ -1,4 +1,4 @@
-import { describe, test, expect, afterEach } from 'vitest';
+import { afterEach, describe, expect, test } from 'vitest';
 import { MemoryCache, createCacheKey } from '../src/services/cache.js';
 
 function makeCache(maxSize?: number): MemoryCache {
@@ -81,6 +81,8 @@ describe('createCacheKey.packageInfo', () => {
     // The tool always queries the latest version; the cache key
     // should not require callers to pass a version they don't have.
     expect(createCacheKey.packageInfo('lodash')).toBe('pkg_info:lodash');
-    expect(createCacheKey.packageInfo('@types/node')).toBe('pkg_info:@types/node');
+    expect(createCacheKey.packageInfo('@types/node')).toBe(
+      'pkg_info:@types/node',
+    );
   });
 });

@@ -1,6 +1,10 @@
-import { logger } from '../utils/logger.js';
-import { handleApiError, handleHttpError, withRetry } from '../utils/error-handler.js';
 import { RepositoryInfo } from '../types/index.js';
+import {
+  handleApiError,
+  handleHttpError,
+  withRetry,
+} from '../utils/error-handler.js';
+import { logger } from '../utils/logger.js';
 
 export class GitHubApiClient {
   private readonly baseUrl = 'https://api.github.com';
@@ -9,8 +13,8 @@ export class GitHubApiClient {
 
   constructor(token?: string, timeout?: number) {
     this.token = token;
-    this.timeout = timeout || 30000;
-    
+    this.timeout = timeout ?? 30000;
+
     if (!this.token) {
       logger.warn('GitHub token not provided. Rate limits will be lower.');
     }
@@ -18,47 +22,63 @@ export class GitHubApiClient {
 
   async getReadme(owner: string, repo: string): Promise<string> {
     const url = `${this.baseUrl}/repos/${encodeURIComponent(owner)}/${encodeURIComponent(repo)}/readme`;
-    
-    return withRetry(async () => {
-      logger.debug(`Fetching README from GitHub: ${owner}/${repo}`);
-      
-      const controller = new AbortController();
-      const timeoutId = setTimeout(() => controller.abort(), this.timeout);
-      
-      try {
-        const headers: Record<string, string> = {
-          'Accept': 'application/vnd.github.v3.raw',
-          'User-Agent': 'package-readme-mcp/1.0.0',
-        };
 
-        if (this.token) {
-          headers['Authorization'] = `token ${this.token}`;
+    return withRetry(
+      async () => {
+        logger.debug(`Fetching README from GitHub: ${owner}/${repo}`);
+
+        const controller = new AbortController();
+        const timeoutId = setTimeout(() => {
+          controller.abort();
+        }, this.timeout);
+
+        try {
+          const headers: Record<string, string> = {
+            Accept: 'application/vnd.github.v3.raw',
+            'User-Agent': 'package-readme-mcp/1.0.0',
+          };
+
+          if (this.token) {
+            headers.Authorization = `token ${this.token}`;
+          }
+
+          const response = await fetch(url, {
+            signal: controller.signal,
+            headers,
+          });
+
+          if (!response.ok) {
+            handleHttpError(
+              response.status,
+              response,
+              `GitHub README for ${owner}/${repo}`,
+            );
+          }
+
+          const readmeContent = await response.text();
+          logger.debug(
+            `Successfully fetched README from GitHub: ${owner}/${repo}`,
+          );
+          return readmeContent;
+        } catch (error) {
+          const target =
+            (error as Error).name === 'AbortError'
+              ? new Error('Request timeout')
+              : error;
+          handleApiError(target, `GitHub README for ${owner}/${repo}`);
+        } finally {
+          clearTimeout(timeoutId);
         }
-
-        const response = await fetch(url, {
-          signal: controller.signal,
-          headers,
-        });
-
-        if (!response.ok) {
-          handleHttpError(response.status, response, `GitHub README for ${owner}/${repo}`);
-        }
-
-        const readmeContent = await response.text();
-        logger.debug(`Successfully fetched README from GitHub: ${owner}/${repo}`);
-        return readmeContent;
-      } catch (error) {
-        const target = (error as Error).name === 'AbortError'
-          ? new Error('Request timeout')
-          : error;
-        handleApiError(target, `GitHub README for ${owner}/${repo}`);
-      } finally {
-        clearTimeout(timeoutId);
-      }
-    }, 3, 1000, `GitHub API getReadme(${owner}/${repo})`);
+      },
+      3,
+      1000,
+      `GitHub API getReadme(${owner}/${repo})`,
+    );
   }
 
-  parseRepositoryUrl(repositoryUrl: string): { owner: string; repo: string } | null {
+  parseRepositoryUrl(
+    repositoryUrl: string,
+  ): { owner: string; repo: string } | null {
     try {
       // Handle various GitHub URL formats
       const patterns = [
@@ -70,7 +90,7 @@ export class GitHubApiClient {
 
       for (const pattern of patterns) {
         const match = repositoryUrl.match(pattern);
-        if (match) {
+        if (match?.[1] && match[2]) {
           return {
             owner: match[1],
             repo: match[2],
@@ -86,7 +106,9 @@ export class GitHubApiClient {
     }
   }
 
-  async getReadmeFromRepository(repository: RepositoryInfo): Promise<string | null> {
+  async getReadmeFromRepository(
+    repository: RepositoryInfo,
+  ): Promise<string | null> {
     if (repository.type !== 'git') {
       return null;
     }
@@ -99,7 +121,10 @@ export class GitHubApiClient {
     try {
       return await this.getReadme(parsed.owner, parsed.repo);
     } catch (error) {
-      logger.debug(`Failed to fetch README from GitHub: ${parsed.owner}/${parsed.repo}`, { error });
+      logger.debug(
+        `Failed to fetch README from GitHub: ${parsed.owner}/${parsed.repo}`,
+        { error },
+      );
       return null;
     }
   }
@@ -122,5 +147,7 @@ export class GitHubApiClient {
 const githubTimeoutMs = Number(process.env.REQUEST_TIMEOUT);
 export const githubApi = new GitHubApiClient(
   process.env.GITHUB_TOKEN,
-  Number.isFinite(githubTimeoutMs) && githubTimeoutMs > 0 ? githubTimeoutMs : undefined,
+  Number.isFinite(githubTimeoutMs) && githubTimeoutMs > 0
+    ? githubTimeoutMs
+    : undefined,
 );

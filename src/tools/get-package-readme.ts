@@ -1,20 +1,22 @@
-import { logger } from '../utils/logger.js';
-import { validatePackageName, validateVersion } from '../utils/validators.js';
 import { cache, createCacheKey } from '../services/cache.js';
-import { npmRegistry } from '../services/npm-registry.js';
 import { githubApi } from '../services/github-api.js';
+import { npmRegistry } from '../services/npm-registry.js';
 import { readmeParser } from '../services/readme-parser.js';
 import {
   GetPackageReadmeParams,
-  PackageReadmeResponse,
   InstallationInfo,
   PackageBasicInfo,
   PackageNotFoundError,
+  PackageReadmeResponse,
   RepositoryInfo,
   VersionNotFoundError,
 } from '../types/index.js';
+import { logger } from '../utils/logger.js';
+import { validatePackageName, validateVersion } from '../utils/validators.js';
 
-export async function getPackageReadme(params: GetPackageReadmeParams): Promise<PackageReadmeResponse> {
+export async function getPackageReadme(
+  params: GetPackageReadmeParams,
+): Promise<PackageReadmeResponse> {
   const { package_name, version = 'latest', include_examples = true } = params;
 
   logger.info(`Fetching package README: ${package_name}@${version}`);
@@ -42,7 +44,10 @@ export async function getPackageReadme(params: GetPackageReadmeParams): Promise<
     packageInfo = await npmRegistry.getPackageInfo(package_name);
     versionInfo = await npmRegistry.getVersionInfo(package_name, version);
   } catch (error) {
-    if (!(error instanceof PackageNotFoundError) && !(error instanceof VersionNotFoundError)) {
+    if (
+      !(error instanceof PackageNotFoundError) &&
+      !(error instanceof VersionNotFoundError)
+    ) {
       throw error;
     }
     logger.debug(`Package not found: ${package_name}`);
@@ -85,7 +90,9 @@ export async function getPackageReadme(params: GetPackageReadmeParams): Promise<
   }
   // If no README in npm registry, try GitHub as fallback
   else if (versionInfo.repository) {
-    const githubReadme = await githubApi.getReadmeFromRepository(versionInfo.repository);
+    const githubReadme = await githubApi.getReadmeFromRepository(
+      versionInfo.repository,
+    );
     if (githubReadme) {
       readmeContent = githubReadme;
       readmeSource = 'github';
@@ -97,7 +104,10 @@ export async function getPackageReadme(params: GetPackageReadmeParams): Promise<
   const cleanedReadme = readmeParser.cleanMarkdown(readmeContent);
 
   // Extract usage examples
-  const usageExamples = readmeParser.parseUsageExamples(readmeContent, include_examples);
+  const usageExamples = readmeParser.parseUsageExamples(
+    readmeContent,
+    include_examples,
+  );
 
   // Create installation info
   const installation: InstallationInfo = {
@@ -109,15 +119,21 @@ export async function getPackageReadme(params: GetPackageReadmeParams): Promise<
   const basicInfo: PackageBasicInfo = {
     name: versionInfo.name,
     version: actualVersion,
-    description: versionInfo.description || packageInfo.description || 'No description available',
-    main: versionInfo.main || undefined,
-    types: versionInfo.types || undefined,
-    homepage: versionInfo.homepage || packageInfo.homepage || undefined,
-    bugs: typeof versionInfo.bugs === 'string' ? versionInfo.bugs : versionInfo.bugs?.url || undefined,
-    license: versionInfo.license || packageInfo.license || 'Unknown',
-    author: versionInfo.author || packageInfo.author || 'Unknown',
-    contributors: versionInfo.contributors || undefined,
-    keywords: versionInfo.keywords || packageInfo.keywords || [],
+    description:
+      versionInfo.description ||
+      packageInfo.description ||
+      'No description available',
+    main: versionInfo.main,
+    types: versionInfo.types,
+    homepage: versionInfo.homepage ?? packageInfo.homepage,
+    bugs:
+      typeof versionInfo.bugs === 'string'
+        ? versionInfo.bugs
+        : versionInfo.bugs?.url,
+    license: versionInfo.license ?? packageInfo.license ?? 'Unknown',
+    author: versionInfo.author ?? packageInfo.author ?? 'Unknown',
+    contributors: versionInfo.contributors,
+    keywords: versionInfo.keywords ?? packageInfo.keywords ?? [],
   };
 
   // Create repository info
@@ -126,7 +142,7 @@ export async function getPackageReadme(params: GetPackageReadmeParams): Promise<
     repository = {
       type: versionInfo.repository.type,
       url: versionInfo.repository.url,
-      directory: versionInfo.repository.directory || undefined,
+      directory: versionInfo.repository.directory,
     };
   }
 
@@ -139,13 +155,15 @@ export async function getPackageReadme(params: GetPackageReadmeParams): Promise<
     usage_examples: usageExamples,
     installation,
     basic_info: basicInfo,
-    repository: repository || undefined,
+    repository,
     exists: true,
   };
 
   // Cache the response
   cache.set(cacheKey, response);
 
-  logger.info(`Successfully fetched package README: ${package_name}@${actualVersion} (README source: ${readmeSource})`);
+  logger.info(
+    `Successfully fetched package README: ${package_name}@${actualVersion} (README source: ${readmeSource})`,
+  );
   return response;
 }

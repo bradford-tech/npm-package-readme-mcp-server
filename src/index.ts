@@ -1,19 +1,18 @@
 #!/usr/bin/env node
 
-import { logger } from './utils/logger.js';
-import { cache } from './services/cache.js';
 import PackageReadmeMcpServer from './server.js';
+import { cache } from './services/cache.js';
+import { logger } from './utils/logger.js';
 
 async function main(): Promise<void> {
   let server: PackageReadmeMcpServer | null = null;
 
   try {
     logger.info('Initializing package-readme-mcp server');
-    
+
     // Create and start the server
     server = new PackageReadmeMcpServer();
     await server.run();
-    
   } catch (error) {
     logger.error('Failed to start server', { error });
     process.exit(1);
@@ -22,15 +21,13 @@ async function main(): Promise<void> {
   // Handle graceful shutdown
   const handleShutdown = async (signal: string) => {
     logger.info(`Received ${signal}, shutting down gracefully`);
-    
+
     try {
-      if (server) {
-        await server.stop();
-      }
-      
+      await server.stop();
+
       // Clean up cache
       cache.destroy();
-      
+
       logger.info('Server shutdown complete');
       process.exit(0);
     } catch (error) {
@@ -40,9 +37,13 @@ async function main(): Promise<void> {
   };
 
   // Register signal handlers
-  process.on('SIGINT', () => handleShutdown('SIGINT'));
-  process.on('SIGTERM', () => handleShutdown('SIGTERM'));
-  
+  process.on('SIGINT', () => {
+    void handleShutdown('SIGINT');
+  });
+  process.on('SIGTERM', () => {
+    void handleShutdown('SIGTERM');
+  });
+
   // Handle uncaught exceptions and rejections
   process.on('uncaughtException', (error) => {
     logger.error('Uncaught exception', { error });
@@ -56,7 +57,7 @@ async function main(): Promise<void> {
 }
 
 // Run the server
-main().catch((error) => {
+main().catch((error: unknown) => {
   logger.error('Failed to start application', { error });
   process.exit(1);
 });

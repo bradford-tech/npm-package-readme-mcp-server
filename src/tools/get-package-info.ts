@@ -1,5 +1,3 @@
-import { logger } from '../utils/logger.js';
-import { validatePackageName } from '../utils/validators.js';
 import { cache, createCacheKey } from '../services/cache.js';
 import { npmRegistry } from '../services/npm-registry.js';
 import {
@@ -7,12 +5,16 @@ import {
   PackageInfoResponse,
   RepositoryInfo,
 } from '../types/index.js';
+import { logger } from '../utils/logger.js';
+import { validatePackageName } from '../utils/validators.js';
 
-export async function getPackageInfo(params: GetPackageInfoParams): Promise<PackageInfoResponse> {
-  const { 
-    package_name, 
-    include_dependencies = true, 
-    include_dev_dependencies = false 
+export async function getPackageInfo(
+  params: GetPackageInfoParams,
+): Promise<PackageInfoResponse> {
+  const {
+    package_name,
+    include_dependencies = true,
+    include_dev_dependencies = false,
   } = params;
 
   logger.info(`Fetching package info: ${package_name}`);
@@ -60,7 +62,9 @@ export async function getPackageInfo(params: GetPackageInfoParams): Promise<Pack
   const versionInfo = packageInfo.versions[latestVersion];
 
   if (!versionInfo) {
-    throw new Error(`Latest version ${latestVersion} not found for package ${package_name}`);
+    throw new Error(
+      `Latest version ${latestVersion} not found for package ${package_name}`,
+    );
   }
 
   // Get download statistics
@@ -90,12 +94,12 @@ export async function getPackageInfo(params: GetPackageInfoParams): Promise<Pack
 
   // Extract repository information
   let repository: RepositoryInfo | undefined;
-  const repoInfo = versionInfo.repository || packageInfo.repository;
+  const repoInfo = versionInfo.repository ?? packageInfo.repository;
   if (repoInfo) {
     repository = {
       type: repoInfo.type,
       url: repoInfo.url,
-      directory: repoInfo.directory || undefined,
+      directory: repoInfo.directory,
     };
   }
 
@@ -115,20 +119,25 @@ export async function getPackageInfo(params: GetPackageInfoParams): Promise<Pack
   const response: PackageInfoResponse = {
     package_name,
     latest_version: latestVersion,
-    description: versionInfo.description || packageInfo.description || 'No description available',
+    description:
+      versionInfo.description ||
+      packageInfo.description ||
+      'No description available',
     author: authorString,
-    license: versionInfo.license || packageInfo.license || 'Unknown',
-    keywords: versionInfo.keywords || packageInfo.keywords || [],
-    dependencies: dependencies || undefined,
-    dev_dependencies: devDependencies || undefined,
+    license: versionInfo.license ?? packageInfo.license ?? 'Unknown',
+    keywords: versionInfo.keywords ?? packageInfo.keywords ?? [],
+    dependencies,
+    dev_dependencies: devDependencies,
     download_stats: downloadStats,
-    repository: repository || undefined,
+    repository,
     exists: true,
   };
 
   // Cache the response
   cache.set(cacheKey, response);
 
-  logger.info(`Successfully fetched package info: ${package_name}@${latestVersion}`);
+  logger.info(
+    `Successfully fetched package info: ${package_name}@${latestVersion}`,
+  );
   return response;
 }

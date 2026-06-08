@@ -1,5 +1,5 @@
-import { logger } from '../utils/logger.js';
 import { UsageExample } from '../types/index.js';
+import { logger } from '../utils/logger.js';
 
 export class ReadmeParser {
   private static readonly USAGE_SECTION_PATTERNS = [
@@ -10,7 +10,10 @@ export class ReadmeParser {
 
   private static readonly CODE_BLOCK_PATTERN = /```(\w+)?\n([\s\S]*?)```/g;
 
-  parseUsageExamples(readmeContent: string, includeExamples: boolean = true): UsageExample[] {
+  parseUsageExamples(
+    readmeContent: string,
+    includeExamples = true,
+  ): UsageExample[] {
     if (!includeExamples || !readmeContent) {
       return [];
     }
@@ -26,11 +29,13 @@ export class ReadmeParser {
 
       // Deduplicate examples based on code content
       const uniqueExamples = this.deduplicateExamples(examples);
-      
+
       // Limit to reasonable number
       const limitedExamples = uniqueExamples.slice(0, 10);
 
-      logger.debug(`Extracted ${limitedExamples.length} usage examples from README`);
+      logger.debug(
+        `Extracted ${limitedExamples.length} usage examples from README`,
+      );
       return limitedExamples;
     } catch (error) {
       logger.warn('Failed to parse usage examples from README', { error });
@@ -45,12 +50,11 @@ export class ReadmeParser {
     let inUsageSection = false;
     let sectionLevel = 0;
 
-    for (let i = 0; i < lines.length; i++) {
-      const line = lines[i];
+    for (const line of lines) {
       const isHeader = /^#{1,6}\s/.test(line);
-      
+
       if (isHeader) {
-        const level = (line.match(/^#+/) || [''])[0].length;
+        const level = (/^#+/.exec(line) ?? [''])[0].length;
         const isUsageHeader = this.isUsageHeader(line);
 
         if (isUsageHeader) {
@@ -85,7 +89,7 @@ export class ReadmeParser {
   }
 
   private isUsageHeader(line: string): boolean {
-    return ReadmeParser.USAGE_SECTION_PATTERNS.some(pattern => {
+    return ReadmeParser.USAGE_SECTION_PATTERNS.some((pattern) => {
       pattern.lastIndex = 0; // Reset regex state
       return pattern.test(line);
     });
@@ -93,13 +97,16 @@ export class ReadmeParser {
 
   private extractCodeBlocksFromSection(section: string): UsageExample[] {
     const examples: UsageExample[] = [];
-    const codeBlockRegex = new RegExp(ReadmeParser.CODE_BLOCK_PATTERN.source, 'g');
+    const codeBlockRegex = new RegExp(
+      ReadmeParser.CODE_BLOCK_PATTERN.source,
+      'g',
+    );
     let match;
 
     while ((match = codeBlockRegex.exec(section)) !== null) {
-      const [, language = 'text', code] = match;
+      const [, language = 'text', code = ''] = match;
       const cleanCode = code.trim();
-      
+
       if (cleanCode.length === 0) {
         continue;
       }
@@ -110,7 +117,7 @@ export class ReadmeParser {
 
       examples.push({
         title,
-        description: description || undefined,
+        description: description ?? undefined,
         code: cleanCode,
         language: this.normalizeLanguage(language),
       });
@@ -121,10 +128,14 @@ export class ReadmeParser {
 
   private generateExampleTitle(code: string, language: string): string {
     // Try to infer title from code content
-    const firstLine = code.split('\n')[0].trim();
-    
+    const firstLine = (code.split('\n')[0] ?? '').trim();
+
     if (language === 'bash' || language === 'shell' || language === 'sh') {
-      if (firstLine.includes('npm install') || firstLine.includes('yarn add') || firstLine.includes('pnpm add')) {
+      if (
+        firstLine.includes('npm install') ||
+        firstLine.includes('yarn add') ||
+        firstLine.includes('pnpm add')
+      ) {
         return 'Installation';
       }
       return 'Command Line Usage';
@@ -158,22 +169,29 @@ export class ReadmeParser {
     return 'Code Example';
   }
 
-  private extractExampleDescription(section: string, codeBlockIndex: number): string | undefined {
+  private extractExampleDescription(
+    section: string,
+    codeBlockIndex: number,
+  ): string | undefined {
     // Look for text before the code block that might be a description
     const beforeCodeBlock = section.substring(0, codeBlockIndex);
     const lines = beforeCodeBlock.split('\n').reverse();
-    
+
     for (const line of lines) {
       const trimmed = line.trim();
       if (trimmed.length === 0 || trimmed.startsWith('#')) {
         continue;
       }
-      
+
       // If it's a reasonable length and doesn't look like code, use it as description
-      if (trimmed.length > 10 && trimmed.length < 200 && !this.looksLikeCode(trimmed)) {
+      if (
+        trimmed.length > 10 &&
+        trimmed.length < 200 &&
+        !this.looksLikeCode(trimmed)
+      ) {
         return trimmed.replace(/^[*-]\s*/, ''); // Remove bullet points
       }
-      
+
       break; // Stop at first non-empty line
     }
 
@@ -191,22 +209,22 @@ export class ReadmeParser {
       /^\s*#/, // Comments or shell
     ];
 
-    return codeIndicators.some(pattern => pattern.test(text));
+    return codeIndicators.some((pattern) => pattern.test(text));
   }
 
   private normalizeLanguage(language: string): string {
     const normalized = language.toLowerCase();
-    
+
     const languageMap: Record<string, string> = {
-      'js': 'javascript',
-      'ts': 'typescript',
-      'sh': 'bash',
-      'shell': 'bash',
-      'yml': 'yaml',
-      'md': 'markdown',
+      js: 'javascript',
+      ts: 'typescript',
+      sh: 'bash',
+      shell: 'bash',
+      yml: 'yaml',
+      md: 'markdown',
     };
 
-    return languageMap[normalized] || normalized;
+    return languageMap[normalized] ?? normalized;
   }
 
   private deduplicateExamples(examples: UsageExample[]): UsageExample[] {
@@ -216,7 +234,7 @@ export class ReadmeParser {
     for (const example of examples) {
       // Create a hash of the code content (normalize whitespace)
       const codeHash = example.code.replace(/\s+/g, ' ').trim();
-      
+
       if (!seen.has(codeHash)) {
         seen.add(codeHash);
         unique.push(example);
@@ -232,13 +250,19 @@ export class ReadmeParser {
       let cleaned = content;
 
       // Remove badges (but keep the alt text if meaningful)
-      cleaned = cleaned.replace(/!\[([^\]]*)\]\([^)]+\)/g, (_match, altText) => {
-        return altText && altText.length > 3 ? altText : '';
-      });
+      cleaned = cleaned.replace(
+        /!\[([^\]]*)\]\([^)]+\)/g,
+        (_match: string, altText: string) => {
+          return altText.length > 3 ? altText : '';
+        },
+      );
 
       // Convert relative links to absolute GitHub links (if we can detect the repo)
       // This is a simplified version - in practice, you'd want to pass repository info
-      cleaned = cleaned.replace(/\[([^\]]+)\]\((?!https?:\/\/)([^)]+)\)/g, '$1');
+      cleaned = cleaned.replace(
+        /\[([^\]]+)\]\((?!https?:\/\/)([^)]+)\)/g,
+        '$1',
+      );
 
       // Clean up excessive whitespace
       cleaned = cleaned.replace(/\n{3,}/g, '\n\n');
@@ -260,7 +284,7 @@ export class ReadmeParser {
 
       for (const line of lines) {
         const trimmed = line.trim();
-        
+
         // Skip empty lines and headers
         if (trimmed.length === 0 || trimmed.startsWith('#')) {
           if (foundDescription && description.length > 0) {

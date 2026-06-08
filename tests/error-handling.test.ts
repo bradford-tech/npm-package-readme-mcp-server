@@ -1,12 +1,20 @@
-import { describe, test, expect, vi, beforeEach, afterEach } from 'vitest';
+import {
+  afterEach,
+  beforeEach,
+  describe,
+  expect,
+  type MockInstance,
+  test,
+  vi,
+} from 'vitest';
+import { cache } from '../src/services/cache.js';
 import { NpmRegistryClient } from '../src/services/npm-registry.js';
+import { getPackageInfo } from '../src/tools/get-package-info.js';
+import { getPackageReadme } from '../src/tools/get-package-readme.js';
 import {
   PackageNotFoundError,
   VersionNotFoundError,
 } from '../src/types/index.js';
-import { getPackageReadme } from '../src/tools/get-package-readme.js';
-import { getPackageInfo } from '../src/tools/get-package-info.js';
-import { cache } from '../src/services/cache.js';
 
 const STUB_PACKAGE_INFO = {
   _id: 'real',
@@ -19,7 +27,13 @@ const STUB_PACKAGE_INFO = {
       name: 'real',
       version: '1.0.0',
       description: 'real package',
-      dist: { integrity: '', shasum: '', tarball: '', fileCount: 0, unpackedSize: 0 },
+      dist: {
+        integrity: '',
+        shasum: '',
+        tarball: '',
+        fileCount: 0,
+        unpackedSize: 0,
+      },
     },
   },
   time: { created: '2020-01-01', modified: '2020-01-01' },
@@ -48,7 +62,7 @@ describe('PackageNotFoundError', () => {
 });
 
 describe('NpmRegistryClient.packageExists', () => {
-  let fetchSpy: ReturnType<typeof vi.spyOn>;
+  let fetchSpy: MockInstance<typeof fetch>;
   let client: NpmRegistryClient;
 
   beforeEach(() => {
@@ -63,7 +77,9 @@ describe('NpmRegistryClient.packageExists', () => {
 
   test('returns false when npm returns 404', async () => {
     fetchSpy.mockResolvedValueOnce(new Response('not found', { status: 404 }));
-    await expect(client.packageExists('definitely-not-a-real-package')).resolves.toBe(false);
+    await expect(
+      client.packageExists('definitely-not-a-real-package'),
+    ).resolves.toBe(false);
   });
 
   test('returns true when the package resolves', async () => {
@@ -73,7 +89,7 @@ describe('NpmRegistryClient.packageExists', () => {
 });
 
 describe('getPackageReadme', () => {
-  let fetchSpy: ReturnType<typeof vi.spyOn>;
+  let fetchSpy: MockInstance<typeof fetch>;
 
   beforeEach(() => {
     fetchSpy = vi.spyOn(globalThis, 'fetch');
@@ -85,22 +101,30 @@ describe('getPackageReadme', () => {
   });
 
   test('returns exists:false when the package is not found', async () => {
-    fetchSpy.mockImplementation(async () => new Response('not found', { status: 404 }));
-    const result = await getPackageReadme({ package_name: 'definitely-not-real-xyz' });
+    fetchSpy.mockImplementation(() =>
+      Promise.resolve(new Response('not found', { status: 404 })),
+    );
+    const result = await getPackageReadme({
+      package_name: 'definitely-not-real-xyz',
+    });
     expect(result.exists).toBe(false);
     expect(result.package_name).toBe('definitely-not-real-xyz');
   });
 
   test('propagates non-404 errors instead of masking them as exists:false', async () => {
     // 401 is not retried by withRetry; it bubbles up directly.
-    fetchSpy.mockImplementation(async () => new Response('unauthorized', { status: 401 }));
+    fetchSpy.mockImplementation(() =>
+      Promise.resolve(new Response('unauthorized', { status: 401 })),
+    );
     await expect(
       getPackageReadme({ package_name: 'whatever' }),
     ).rejects.toThrow(/401|HTTP error/i);
   });
 
   test('returns exists:false when the requested version is missing', async () => {
-    fetchSpy.mockImplementation(async () => jsonResponse(STUB_PACKAGE_INFO));
+    fetchSpy.mockImplementation(() =>
+      Promise.resolve(jsonResponse(STUB_PACKAGE_INFO)),
+    );
     const result = await getPackageReadme({
       package_name: 'real',
       version: '99.99.99',
@@ -109,20 +133,24 @@ describe('getPackageReadme', () => {
   });
 
   test('installation.command is a complete `npm install` invocation (success path)', async () => {
-    fetchSpy.mockImplementation(async () => jsonResponse(STUB_PACKAGE_INFO));
+    fetchSpy.mockImplementation(() =>
+      Promise.resolve(jsonResponse(STUB_PACKAGE_INFO)),
+    );
     const result = await getPackageReadme({ package_name: 'real' });
     expect(result.installation.command).toBe('npm install real');
   });
 
   test('installation.command is a complete `npm install` invocation (not-found path)', async () => {
-    fetchSpy.mockImplementation(async () => new Response('not found', { status: 404 }));
+    fetchSpy.mockImplementation(() =>
+      Promise.resolve(new Response('not found', { status: 404 })),
+    );
     const result = await getPackageReadme({ package_name: 'gone' });
     expect(result.installation.command).toBe('npm install gone');
   });
 });
 
 describe('getPackageInfo', () => {
-  let fetchSpy: ReturnType<typeof vi.spyOn>;
+  let fetchSpy: MockInstance<typeof fetch>;
 
   beforeEach(() => {
     fetchSpy = vi.spyOn(globalThis, 'fetch');
@@ -134,13 +162,17 @@ describe('getPackageInfo', () => {
   });
 
   test('returns exists:false on 404', async () => {
-    fetchSpy.mockImplementation(async () => new Response('not found', { status: 404 }));
+    fetchSpy.mockImplementation(() =>
+      Promise.resolve(new Response('not found', { status: 404 })),
+    );
     const result = await getPackageInfo({ package_name: 'nope-not-real' });
     expect(result.exists).toBe(false);
   });
 
   test('propagates non-404 errors', async () => {
-    fetchSpy.mockImplementation(async () => new Response('unauthorized', { status: 401 }));
+    fetchSpy.mockImplementation(() =>
+      Promise.resolve(new Response('unauthorized', { status: 401 })),
+    );
     await expect(
       getPackageInfo({ package_name: 'whatever' }),
     ).rejects.toThrow();
@@ -157,7 +189,7 @@ describe('VersionNotFoundError', () => {
 });
 
 describe('5xx retry behavior', () => {
-  let fetchSpy: ReturnType<typeof vi.spyOn>;
+  let fetchSpy: MockInstance<typeof fetch>;
   let client: NpmRegistryClient;
 
   beforeEach(() => {
@@ -172,11 +204,13 @@ describe('5xx retry behavior', () => {
   });
 
   test('retries 5xx, surfaces NetworkError, does not mask as exists:false', async () => {
-    fetchSpy.mockImplementation(async () => new Response('boom', { status: 503 }));
+    fetchSpy.mockImplementation(() =>
+      Promise.resolve(new Response('boom', { status: 503 })),
+    );
 
-    const pending = client.getPackageInfo('whatever').then(
+    const pending: Promise<unknown> = client.getPackageInfo('whatever').then(
       () => 'resolved',
-      (err) => err,
+      (err: unknown) => err,
     );
 
     // withRetry: 4 attempts (1 + 3 retries) with 1s, 2s, 4s backoff = 7s total.

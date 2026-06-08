@@ -1,11 +1,21 @@
-import { describe, test, expect, vi, beforeEach, afterEach } from 'vitest';
+import {
+  afterEach,
+  beforeEach,
+  describe,
+  expect,
+  type MockInstance,
+  test,
+  vi,
+} from 'vitest';
 import { Logger, LogLevel } from '../src/utils/logger.js';
 
 describe('Logger', () => {
-  let stderrSpy: ReturnType<typeof vi.spyOn>;
+  let stderrSpy: MockInstance<typeof process.stderr.write>;
 
   beforeEach(() => {
-    stderrSpy = vi.spyOn(process.stderr, 'write').mockImplementation(() => true);
+    stderrSpy = vi
+      .spyOn(process.stderr, 'write')
+      .mockImplementation(() => true);
   });
 
   afterEach(() => {
@@ -41,7 +51,9 @@ describe('Logger', () => {
 
   describe('output', () => {
     test('writes to stderr (not stdout)', () => {
-      const stdoutSpy = vi.spyOn(process.stdout, 'write').mockImplementation(() => true);
+      const stdoutSpy = vi
+        .spyOn(process.stdout, 'write')
+        .mockImplementation(() => true);
       const logger = new Logger(LogLevel.INFO);
       logger.info('msg');
       expect(stderrSpy).toHaveBeenCalledOnce();
