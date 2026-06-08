@@ -2,6 +2,23 @@
   "name": "@bradford-tech/npm-package-readme-mcp-server",
   "version": "0.1.5",
   "description": "MCP server for fetching npm package README and usage information",
+  "keywords": [
+    "mcp",
+    "npm",
+    "readme",
+    "package",
+    "documentation"
+  ],
+  "homepage": "https://github.com/bradford-tech/npm-package-readme-mcp-server#readme",
+  "bugs": {
+    "url": "https://github.com/bradford-tech/npm-package-readme-mcp-server/issues"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/bradford-tech/npm-package-readme-mcp-server.git"
+  },
+  "license": "MIT",
+  "author": "sbs44",
   "type": "module",
   "main": "dist/index.js",
   "bin": {
@@ -15,45 +32,39 @@
   "scripts": {
     "build": "tsc",
     "dev": "tsx src/index.ts",
+    "fix": "npm run format:write && npm run lint:fix",
+    "format": "prettier . --log-level warn",
+    "format:write": "prettier . --write --log-level warn",
+    "lint": "eslint . --quiet --max-warnings 0",
+    "lint:fix": "eslint . --fix --quiet --max-warnings 0",
+    "prepublishOnly": "npm run build",
     "start": "node dist/index.js",
     "test": "vitest run",
-    "lint": "eslint src/**/*.ts",
-    "typecheck": "tsc --noEmit",
-    "prepublishOnly": "npm run build"
-  },
-  "repository": {
-    "type": "git",
-    "url": "git+https://github.com/bradford-tech/npm-package-readme-mcp-server.git"
-  },
-  "homepage": "https://github.com/bradford-tech/npm-package-readme-mcp-server#readme",
-  "bugs": {
-    "url": "https://github.com/bradford-tech/npm-package-readme-mcp-server/issues"
-  },
-  "keywords": [
-    "mcp",
-    "npm",
-    "readme",
-    "package",
-    "documentation"
-  ],
-  "author": "sbs44",
-  "license": "MIT",
-  "publishConfig": {
-    "access": "public"
+    "typecheck": "tsc --noEmit"
   },
   "dependencies": {
     "@modelcontextprotocol/sdk": "^1.29.0"
   },
   "devDependencies": {
+    "@eslint/js": "^10.0.1",
     "@types/node": "^20.19.41",
-    "@typescript-eslint/eslint-plugin": "^8.60.1",
-    "@typescript-eslint/parser": "^8.60.1",
-    "eslint": "^8.0.0",
+    "eslint": "^10.4.1",
+    "eslint-config-flat-gitignore": "^2.3.0",
+    "eslint-config-prettier": "^10.1.8",
+    "globals": "^17.6.0",
+    "jiti": "^2.7.0",
+    "prettier": "^3.8.3",
+    "prettier-plugin-organize-imports": "^4.3.0",
+    "prettier-plugin-packagejson": "^3.0.2",
     "tsx": "^4.0.0",
     "typescript": "^5.0.0",
+    "typescript-eslint": "^8.60.1",
     "vitest": "^4.1.8"
   },
   "engines": {
-    "node": ">=20.0.0"
+    "node": ">=20.19.0"
+  },
+  "publishConfig": {
+    "access": "public"
   }
 }
