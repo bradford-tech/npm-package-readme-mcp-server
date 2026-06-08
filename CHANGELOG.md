@@ -1,5 +1,13 @@
 # Changelog
 
+## [0.1.6](https://github.com/bradford-tech/npm-package-readme-mcp-server/compare/npm-package-readme-mcp-server-v0.1.5...npm-package-readme-mcp-server-v0.1.6) (2026-06-08)
+
+
+### Bug Fixes
+
+* **cache:** enforce maxSize via incremental size tracking ([6a41fdb](https://github.com/bradford-tech/npm-package-readme-mcp-server/commit/6a41fdb9ed7deaed1aeaab6a1eac1090101a3f6b))
+* **tools:** emit full "npm install" command instead of bare "install" ([5dcf381](https://github.com/bradford-tech/npm-package-readme-mcp-server/commit/5dcf381cd7d1a803be824a21fbc1b2691573fc56))
+
 ## [0.1.5](https://github.com/bradford-tech/npm-package-readme-mcp-server/compare/npm-package-readme-mcp-server-v0.1.4...npm-package-readme-mcp-server-v0.1.5) (2026-06-07)
 
 
