@@ -103,7 +103,7 @@ GitHub anonymous API requests are rate-limited to 60/hour. The server logs a war
 
 ## Requirements
 
-- Node.js >= 18
+- Node.js >= 20
 
 ## Contributing
 

@@ -4,7 +4,7 @@ Local development setup for `@bradford-tech/npm-package-readme-mcp-server`.
 
 ## Requirements
 
-- Node.js >= 18
+- Node.js >= 20
 - npm (or your package manager of choice)
 
 ## Setup
