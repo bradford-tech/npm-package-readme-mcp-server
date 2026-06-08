@@ -63,22 +63,22 @@ export interface PackageSearchResult {
 
 // Tool Parameters
 export interface GetPackageReadmeParams {
-  package_name: string; // Package name (required)
-  version?: string; // Version specification (optional, default: "latest")
-  include_examples?: boolean; // Whether to include examples (optional, default: true)
+  package_name: string;
+  version?: string | undefined;
+  include_examples?: boolean | undefined;
 }
 
 export interface GetPackageInfoParams {
   package_name: string;
-  include_dependencies?: boolean; // Whether to include dependencies (default: true)
-  include_dev_dependencies?: boolean; // Whether to include dev dependencies (default: false)
+  include_dependencies?: boolean | undefined;
+  include_dev_dependencies?: boolean | undefined;
 }
 
 export interface SearchPackagesParams {
-  query: string; // Search query
-  limit?: number; // Maximum number of results (default: 20)
-  quality?: number; // Minimum quality score (0-1)
-  popularity?: number; // Minimum popularity score (0-1)
+  query: string;
+  limit?: number | undefined;
+  quality?: number | undefined;
+  popularity?: number | undefined;
 }
 
 // Tool Responses
