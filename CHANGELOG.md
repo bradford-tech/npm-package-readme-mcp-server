@@ -1,5 +1,16 @@
 # Changelog
 
+## [0.2.0](https://github.com/bradford-tech/npm-package-readme-mcp-server/compare/npm-package-readme-mcp-server-v0.1.6...npm-package-readme-mcp-server-v0.2.0) (2026-06-09)
+
+
+### ⚠ BREAKING CHANGES
+
+* **server:** prompts/list and resources/list now return MethodNotFound rather than empty arrays. McpServer advertises capabilities only for handlers that are registered, and this server registers neither prompts nor resources. Spec-compliant clients should not call methods for unadvertised capabilities, so most clients will be unaffected; any client relying on the previous empty-array responses must check the server's advertised capabilities first.
+
+### Code Refactoring
+
+* **server:** migrate to McpServer high-level API ([c127187](https://github.com/bradford-tech/npm-package-readme-mcp-server/commit/c127187a0466998d653baa69c772e6031bbcddf5))
+
 ## [0.1.6](https://github.com/bradford-tech/npm-package-readme-mcp-server/compare/npm-package-readme-mcp-server-v0.1.5...npm-package-readme-mcp-server-v0.1.6) (2026-06-08)
 
 
