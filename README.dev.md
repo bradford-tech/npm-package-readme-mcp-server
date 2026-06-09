@@ -47,9 +47,12 @@ src/
 │   └── index.ts              Shared interfaces and error classes.
 └── utils/
     ├── error-handler.ts      `withRetry`, HTTP error mapping.
-    ├── logger.ts             Logger (disabled for MCP stdio compatibility — see below).
+    ├── logger.ts             stderr logger; level controlled by `LOG_LEVEL`.
     └── validators.ts         Input validators with detailed error messages.
 tests/
+├── cache.test.ts             Cache TTL and LRU eviction.
+├── error-handling.test.ts    Tool error paths and 5xx retry behavior.
+├── logger.test.ts            Logger output and level filtering.
 └── validation.test.ts        Validator unit tests.
 ```
 
@@ -66,14 +69,22 @@ You should see a JSON response listing `get_readme_from_npm`, `get_package_info_
 
 ## Logger note
 
-`src/utils/logger.ts` is intentionally a no-op. Writing to stdout or stderr corrupts the JSON-RPC stream MCP clients read. If you need temporary debugging, write to a file instead of using `console.log`.
+`src/utils/logger.ts` writes to `process.stderr`. MCP uses stdio for JSON-RPC; only `stdout` is the wire, so `stderr` is the correct sink for logs and won't corrupt client traffic. Prefer the logger over `console.*` — `console.log` and `console.info` go to stdout and will corrupt the wire.
+
+The level is controlled by the `LOG_LEVEL` environment variable (`ERROR` | `WARN` | `INFO` | `DEBUG`, case-insensitive), default `INFO`. Invalid values silently fall back to `INFO`. For local debugging:
+
+```bash
+LOG_LEVEL=DEBUG npm run dev
+```
+
+See [Configuration in the user README](./README.md#configuration) for the full list of runtime environment variables.
 
 ## Architecture notes
 
 - **Caching.** The cache is in-process, with a default TTL of 1 hour (search responses get 10 minutes). It uses approximate byte sizing and evicts least-recently-used entries above 100 MB. Cache keys live in `src/services/cache.ts` under `createCacheKey`.
 - **Retries.** `withRetry` in `src/utils/error-handler.ts` wraps every outbound HTTP call. It backs off exponentially on network errors and 5xx responses, and honors `Retry-After` on 429.
 - **README fallback.** `get_readme_from_npm` first reads the `readme` field from the npm registry response. If empty, it parses the `repository` URL (supports `https://`, `git+https://`, `git://`, and `git@` forms) and fetches `/repos/{owner}/{repo}/readme` from GitHub.
-- **GitHub rate limits.** Anonymous GitHub requests are capped at 60/hour. The `GitHubApiClient` accepts a token in its constructor but is currently exported without one (`new GitHubApiClient()`); wiring this to an environment variable is a reasonable contribution.
+- **GitHub rate limits.** Anonymous GitHub requests are capped at 60/hour. The exported `githubApi` reads `GITHUB_TOKEN` from the environment at module load and passes it to `GitHubApiClient`. With a token, the limit rises to 5000/hour. For local dev: `GITHUB_TOKEN=ghp_... npm run dev`.
 
 ## Pre-release checklist
 
@@ -89,5 +100,5 @@ You should see a JSON response listing `get_readme_from_npm`, `get_package_info_
 
 1. Open an issue describing the change before significant work.
 2. Keep validators and error messages consistent with the existing style — concrete suggestions, no jargon.
-3. Add Jest tests for new validators or parsers.
+3. Add Vitest tests for new validators or parsers.
 4. Run `npm run typecheck && npm run lint && npm test` before opening a PR.
