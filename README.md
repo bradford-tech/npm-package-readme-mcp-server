@@ -101,6 +101,32 @@ Example call:
 
 GitHub anonymous API requests are rate-limited to 60/hour. The server logs a warning when no token is available but still works for low-volume use.
 
+## Configuration
+
+All settings are optional environment variables, passed via your MCP client's `env` field (or your shell, when launching directly).
+
+| Variable          | Default | Description                                                                               |
+| ----------------- | ------- | ----------------------------------------------------------------------------------------- |
+| `CACHE_TTL`       | `3600`  | Cache time-to-live in **seconds**.                                                        |
+| `REQUEST_TIMEOUT` | `30000` | Per-request timeout in **milliseconds**, applied to npm registry and GitHub API calls.    |
+| `GITHUB_TOKEN`    | —       | GitHub personal access token. Raises the GitHub API rate limit from 60/hour to 5000/hour. |
+| `LOG_LEVEL`       | `INFO`  | One of `ERROR`, `WARN`, `INFO`, `DEBUG` (case-insensitive). Logs are written to `stderr`. |
+
+Example, with a GitHub token:
+
+```json
+{
+  "mcpServers": {
+    "npm-package-readme": {
+      "command": "npm-package-readme-mcp-server",
+      "env": {
+        "GITHUB_TOKEN": "ghp_..."
+      }
+    }
+  }
+}
+```
+
 ## Requirements
 
 - Node.js >= 20
