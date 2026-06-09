@@ -9,6 +9,8 @@ updates:
       include: scope
     labels:
       - automated
+    allow:
+      - dependency-type: production
     groups:
       minor-and-patch:
         applies-to: version-updates
