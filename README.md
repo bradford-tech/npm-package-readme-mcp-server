@@ -133,7 +133,7 @@ Example, with a GitHub token:
 
 ## Contributing
 
-Issues and pull requests welcome at [bradford-tech/npm-package-readme-mcp-server](https://github.com/bradford-tech/npm-package-readme-mcp-server). See [`README.dev.md`](./README.dev.md) for the developer setup.
+Issues and pull requests welcome at [bradford-tech/npm-package-readme-mcp-server](https://github.com/bradford-tech/npm-package-readme-mcp-server). See [`CONTRIBUTING.md`](./CONTRIBUTING.md) for the developer setup.
 
 ## License
 
