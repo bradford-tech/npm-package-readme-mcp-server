@@ -105,12 +105,12 @@ GitHub anonymous API requests are rate-limited to 60/hour. The server logs a war
 
 All settings are optional environment variables, passed via your MCP client's `env` field (or your shell, when launching directly).
 
-| Variable          | Default | Description                                                                               |
-| ----------------- | ------- | ----------------------------------------------------------------------------------------- |
-| `CACHE_TTL`       | `3600`  | Cache time-to-live in **seconds**.                                                        |
-| `REQUEST_TIMEOUT` | `30000` | Per-request timeout in **milliseconds**, applied to npm registry and GitHub API calls.    |
-| `GITHUB_TOKEN`    | —       | GitHub personal access token. Raises the GitHub API rate limit from 60/hour to 5000/hour. |
-| `LOG_LEVEL`       | `INFO`  | One of `ERROR`, `WARN`, `INFO`, `DEBUG` (case-insensitive). Logs are written to `stderr`. |
+| Variable          | Default | Description                                                                                                                            |
+| ----------------- | ------- | -------------------------------------------------------------------------------------------------------------------------------------- |
+| `CACHE_TTL`       | `3600`  | Default cache TTL in **seconds** for `get_readme_from_npm` and `get_package_info_from_npm`. Search results have a fixed 10-minute TTL. |
+| `REQUEST_TIMEOUT` | `30000` | Per-request timeout in **milliseconds**, applied to npm registry and GitHub API calls.                                                 |
+| `GITHUB_TOKEN`    | —       | GitHub personal access token. Raises the GitHub API rate limit from 60/hour to 5000/hour.                                              |
+| `LOG_LEVEL`       | `INFO`  | One of `ERROR`, `WARN`, `INFO`, `DEBUG` (case-insensitive). Invalid values silently fall back to `INFO`. Logs are written to `stderr`. |
 
 Example, with a GitHub token:
 
